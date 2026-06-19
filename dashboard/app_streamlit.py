@@ -131,47 +131,66 @@ st.sidebar.markdown("""
 # --- Cargar Estado en Tiempo Real ---
 LIVE_STATE_PATH = Path(__file__).parent.parent / "data" / "live_state.json"
 
-estudiante = {
+estudiante_default = {
     "nombre": "Carlos López",
     "asistencia": 75.0,
     "atencion": 60.0,
     "participacion": 55.0,
     "actividades": 80.0,
 }
-is_live = False
-frame_path = None
-detections = []
-counts = {}
-aei = {}
+aei_default = calcular_aei(
+    estudiante_default["asistencia"],
+    estudiante_default["atencion"],
+    estudiante_default["participacion"],
+    estudiante_default["actividades"],
+)
+
+# Inicializar variables de estado persistentes en st.session_state
+if "live_estudiante" not in st.session_state:
+    st.session_state.live_estudiante = estudiante_default
+    st.session_state.live_aei = aei_default
+    st.session_state.live_frame_path = None
+    st.session_state.live_detections = []
+    st.session_state.live_counts = {}
+    st.session_state.live_is_live = False
+    st.session_state.live_last_update = 0.0
 
 if LIVE_STATE_PATH.exists():
     try:
+        # Solo leemos si ha sido modificado recientemente
+        mtime = os.path.getmtime(LIVE_STATE_PATH)
         with open(LIVE_STATE_PATH, "r") as f:
             live_data = json.load(f)
         
         if "metrics" in live_data and "aei" in live_data:
-            estudiante = {
+            st.session_state.live_estudiante = {
                 "nombre": live_data.get("nombre", "Carlos López"),
                 "asistencia": live_data["metrics"].get("asistencia", 0.0),
                 "atencion": live_data["metrics"].get("atencion", 0.0),
                 "participacion": live_data["metrics"].get("participacion", 0.0),
                 "actividades": live_data["metrics"].get("actividades", 90.0),
             }
-            aei = live_data["aei"]
-            frame_path = live_data.get("frame_path")
-            detections = live_data.get("detections", [])
-            counts = live_data.get("counts", {})
-            is_live = True
+            st.session_state.live_aei = live_data["aei"]
+            st.session_state.live_frame_path = live_data.get("frame_path")
+            st.session_state.live_detections = live_data.get("detections", [])
+            st.session_state.live_counts = live_data.get("counts", {})
+            st.session_state.live_is_live = True
+            st.session_state.live_last_update = time.time()
     except Exception as e:
+        # Si la lectura falla por bloqueo temporal, usamos el estado guardado sin alterarlo
         pass
 
-if not is_live:
-    aei = calcular_aei(
-        estudiante["asistencia"],
-        estudiante["atencion"],
-        estudiante["participacion"],
-        estudiante["actividades"],
-    )
+# Timeout: Si no recibe actualizaciones en 5 segundos, la cámara se considera desconectada
+if st.session_state.live_is_live and (time.time() - st.session_state.live_last_update > 5.0):
+    st.session_state.live_is_live = False
+
+# Asignar variables finales de renderizado
+estudiante = st.session_state.live_estudiante
+aei = st.session_state.live_aei
+frame_path = st.session_state.live_frame_path
+detections = st.session_state.live_detections
+counts = st.session_state.live_counts
+is_live = st.session_state.live_is_live
 
 COLORES = {"verde": "#10b981", "amarillo": "#f59e0b", "rojo": "#ef4444"}
 color = COLORES.get(aei["estado"], "#4b5563")
