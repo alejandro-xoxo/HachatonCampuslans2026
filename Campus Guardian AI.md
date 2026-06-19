@@ -1,377 +1,517 @@
-# Campus Guardian AI
+La mejor decisión no es reemplazar una idea por la otra, sino fusionarlas en una sola plataforma. Así consiguen:
 
-## Hackathon Campuslands 2026
+* **Impacto educativo** (alerta temprana académica).
+* **Impacto social** (inclusión de personas con discapacidad).
+* **Visión artificial**.
+* **FiftyOne**.
+* **IA generativa**.
+* **Analítica de datos**.
+* **Dashboard demostrable**.
 
-### Reto
-
-Las instituciones educativas generan constantemente información sobre asistencia, desempeño, participación y aprendizaje. Sin embargo, gran parte de estos datos no se utilizan para brindar acompañamiento personalizado ni para mejorar la experiencia educativa de forma proactiva.
-
-El reto consiste en diseñar una solución basada en Inteligencia Artificial que ayude a mejorar:
-
-* El aprendizaje.
-* La participación estudiantil.
-* La gestión académica.
-
-La solución puede utilizar:
-
-* Visión artificial.
-* Agentes de IA.
-* Analítica de datos.
-* Asistentes inteligentes.
-* Cualquier tecnología relevante.
+Y lo más importante: se ve mucho más ambiciosa frente al jurado.
 
 ---
 
-# Idea Seleccionada
+# Nombre Final
 
-## Campus Guardian AI
+## Campus Guardian Access AI
 
-Sistema de alerta temprana académica impulsado por Visión Artificial y Agentes de IA.
+### Slogan
 
-Su objetivo es identificar estudiantes en riesgo antes de que su rendimiento disminuya significativamente o abandonen su proceso de formación.
+**"Educación inteligente, inclusiva y preventiva."**
 
 ---
 
 # Problema
 
-Actualmente los instructores y mentores no siempre pueden detectar de forma temprana señales como:
+Campuslands genera información sobre:
 
-* Baja asistencia.
-* Falta de atención.
-* Escasa participación.
-* Distracciones frecuentes.
+* Asistencia.
+* Participación.
+* Rendimiento.
+* Permanencia.
+
+Pero también existen estudiantes que pueden presentar:
+
+* Discapacidad auditiva.
+* Discapacidad del habla.
+* Discapacidad auditiva y del habla.
 * Riesgo de deserción.
+* Baja participación.
+* Distracciones frecuentes.
 
-Normalmente estas señales se detectan cuando el problema ya es evidente.
+Actualmente estos problemas se gestionan de forma reactiva.
 
 ---
 
 # Solución
 
-Campus Guardian AI analiza el comportamiento observado en el aula utilizando visión artificial y genera recomendaciones automáticas mediante agentes de IA.
+Campus Guardian Access AI es una plataforma basada en IA que:
 
-El sistema:
+### Inclusión
 
-1. Detecta estudiantes presentes.
-2. Detecta posibles distracciones.
-3. Detecta participación.
-4. Calcula un score de riesgo.
-5. Genera recomendaciones para mentores e instructores.
+Ayuda a estudiantes:
+
+* Sordos.
+* Mudos.
+* Sordomudos.
 
 ---
 
-# Variables Analizadas
+### Seguimiento Académico
 
-## Asistencia
+Detecta:
 
-Peso: 30%
+* Participación.
+* Atención.
+* Asistencia.
+* Permanencia.
 
-Indicadores:
+---
 
-* Presente.
-* Ausente.
+### Prevención
+
+Calcula riesgos académicos y genera recomendaciones automáticas.
+
+---
+
+# Módulo 1
+
+# Aula Inclusiva
+
+---
+
+## Profesor → Estudiante Sordo
+
+### Entrada
+
+Audio del profesor.
+
+### IA
+
+Speech To Text.
+
+### Salida
+
+Subtítulos en tiempo real.
+
+Ejemplo:
+
+```text
+Profesor:
+"Hoy veremos Python."
+
+Estudiante:
+[Hoy veremos Python]
+```
+
+---
+
+## Estudiante Mudo → Profesor
+
+### Entrada
+
+Lenguaje de señas.
+
+### IA
+
+Visión artificial.
+
+### Salida
+
+Texto.
+
+```text
+Seña detectada:
+"Tengo una pregunta"
+```
+
+---
+
+## Comunicación Bidireccional
+
+Profesor habla.
+
+↓
+
+Texto.
+
+↓
+
+Estudiante responde con señas.
+
+↓
+
+Texto.
+
+---
+
+# Módulo 2
+
+# Asistencia Inteligente
+
+---
+
+## Función
+
+Registro automático.
+
+### Detecta
+
+* Entrada.
+* Salida.
 * Retrasos.
 
 ---
 
-## Atención Visual
+## Resultado
 
-Peso: 30%
-
-Indicadores:
-
-* Mirando al frente.
-* Distracciones frecuentes.
-* Uso de celular.
-
----
-
-## Participación
-
-Peso: 20%
-
-Indicadores:
-
-* Mano levantada.
-* Interacción en clase.
+```json
+{
+  "nombre": "Miguel",
+  "hora": "08:01",
+  "estado": "Presente"
+}
+```
 
 ---
 
-## Actividad Académica
+# Módulo 3
 
-Peso: 20%
-
-Indicadores simulados para MVP:
-
-* Entregas realizadas.
-* Actividades completadas.
+# Academic Engagement Index
 
 ---
 
-# Sistema de Riesgo
+## Variables
 
-## Verde
+### Asistencia
 
-Score: 90 - 100
+20%
+
+---
+
+### Atención
+
+30%
+
+---
+
+### Participación
+
+30%
+
+---
+
+### Actividades
+
+20%
+
+---
+
+## Resultado
+
+```text
+AEI = 82
+```
 
 Estado:
 
-* Buen rendimiento.
-* Participación adecuada.
+🟢 Excelente
 
 ---
 
-## Amarillo
+# Módulo 4
 
-Score: 60 - 89
-
-Estado:
-
-* Riesgo moderado.
-* Requiere seguimiento.
+# Detección de Distracciones
 
 ---
 
-## Rojo
+Detectar:
 
-Score: 0 - 59
-
-Estado:
-
-* Alto riesgo.
-* Requiere intervención.
+* Celulares.
+* Mirada fuera del tablero.
+* Inactividad prolongada.
 
 ---
 
-# Ejemplo
+YOLO detecta:
 
-Estudiante: Miguel
+```text
+Persona
+Celular
+Mano levantada
+Laptop
+```
 
-Score: 42
+---
 
-Estado: ROJO
+# Módulo 5
 
-Motivos:
+# Permanencia en Clase
 
-* Uso frecuente de celular.
-* Baja participación.
-* Ausencias detectadas.
+---
+
+Registrar:
+
+```text
+Hora entrada
+Hora salida
+Tiempo ausente
+```
+
+---
+
+Ejemplo:
+
+```json
+{
+ "salio":"10:12",
+ "regreso":"10:25",
+ "ausencia":"13 minutos"
+}
+```
+
+---
+
+# Módulo 6
+
+# Detección de Somnolencia
+
+---
+
+MediaPipe Face Mesh:
+
+Detecta:
+
+* Ojos cerrados.
+* Cabeza inclinada.
+
+---
+
+Alerta:
+
+```text
+Posible pérdida de atención detectada.
+```
+
+---
+
+# Módulo 7
+
+# Mentor IA
+
+---
+
+Gemini recibe:
+
+```json
+{
+ "AEI":54,
+ "participacion":40,
+ "atencion":38,
+ "asistencia":70
+}
+```
+
+---
+
+Gemini responde:
+
+```text
+Diagnóstico:
+Bajo compromiso académico.
+
+Acción:
+Programar mentoría individual.
 
 Recomendación:
-
-Programar mentoría individual y seguimiento académico.
+Aplicar actividades colaborativas.
+```
 
 ---
 
-# Pitch
+# FiftyOne (Pieza Principal)
 
-Campus Guardian AI es un sistema de alerta temprana académica que utiliza visión artificial y agentes de IA para identificar señales de riesgo en estudiantes. Analiza asistencia, atención y participación en tiempo real, genera un score de riesgo y recomienda acciones concretas para instructores y mentores antes de que el estudiante reduzca su rendimiento o abandone su proceso de formación.
+Aquí está el diferencial del proyecto.
+
+---
+
+## Dataset 1
+
+Participación
+
+```text
+atento
+participando
+mano_levantada
+```
+
+---
+
+## Dataset 2
+
+Distracciones
+
+```text
+celular
+mirando_abajo
+somnolencia
+```
+
+---
+
+## Dataset 3
+
+Accesibilidad
+
+```text
+señas
+gestos
+comunicación
+```
+
+---
+
+## Dataset 4
+
+Asistencia
+
+```text
+rostros
+presente
+ausente
+```
+
+---
+
+## FiftyOne permitirá
+
+* Gestión de datasets.
+* Visualización de imágenes.
+* Validación de etiquetas.
+* Estadísticas.
+* Métricas.
+* Demostración visual para jurados.
+
+---
+
+# Arquitectura Completa
+
+```text
+Cámara + Micrófono
+        ↓
+OpenCV
+        ↓
+YOLOv8 + MediaPipe
+        ↓
+FiftyOne
+        ↓
+Motor Analítico
+        ↓
+Gemini
+        ↓
+Dashboard Streamlit
+```
 
 ---
 
 # Tecnologías
 
-## Visión Artificial
+### Visión Artificial
 
 * OpenCV
 * YOLOv8
+* MediaPipe
 
-## Análisis y Datos
+### Gestión de Datos
 
 * FiftyOne
 
-Repositorio:
-
-https://github.com/voxel51/fiftyone
-
-Uso dentro del proyecto:
-
-* Visualización de detecciones.
-* Exploración de datasets.
-* Validación de resultados.
-* Análisis de calidad de datos.
-
-## Agente IA
+### IA Generativa
 
 * Gemini API
 
-Funciones:
-
-* Analizar score.
-* Generar recomendaciones.
-* Explicar riesgos.
-* Proponer acciones.
-
-## Dashboard
+### Dashboard
 
 * Streamlit
 
-Funciones:
+### Datos
 
-* Mostrar métricas.
-* Mostrar score.
-* Mostrar estado.
-* Mostrar recomendaciones.
+* Pandas
+* NumPy
+
+### Transcripción
+
+* Whisper
 
 ---
 
-# Arquitectura MVP
+# Lo que mostrarán al jurado
 
-Webcam
+### Demo 1
+
+Profesor habla.
 
 ↓
 
-YOLOv8
+Subtítulos automáticos.
+
+---
+
+### Demo 2
+
+Estudiante hace una seña.
 
 ↓
 
-Detecciones
-
-* Persona
-* Celular
-* Mano levantada
-
-↓
-
-Motor de Score
-
-↓
-
-Gemini
-
-↓
-
-Dashboard Streamlit
+Texto generado.
 
 ---
 
-# Alcance Realista para 5 Horas
+### Demo 3
 
-## Sí hacer
+La cámara detecta:
 
-* Webcam funcionando.
-* Detección de personas.
-* Detección de celulares.
-* Dashboard básico.
-* Score automático.
-* Recomendaciones con Gemini.
-* Demo con FiftyOne.
-
-## No hacer
-
-* Entrenar modelos.
-* Reconocimiento facial.
-* Dataset propio grande.
-* Backend complejo.
-* Integraciones reales con Campuslands.
+* Personas.
+* Celulares.
+* Participación.
 
 ---
 
-# Cronograma
+### Demo 4
 
-## Hora 1
+Dashboard:
 
-* Instalación.
-* Configuración.
-* Repositorio.
-* Webcam.
-
-## Hora 2
-
-* YOLO.
-* Detección de personas.
-* Detección de celulares.
-
-## Hora 3
-
-* Dashboard Streamlit.
-* Sistema de score.
-
-## Hora 4
-
-* Integración Gemini.
-* Integración FiftyOne.
-
-## Hora 5
-
-* Pruebas.
-* Correcciones.
-* Preparación del pitch.
+* Asistencia.
+* Participación.
+* AEI.
+* Alertas.
 
 ---
 
-# División del Equipo
+### Demo 5
 
-## Integrante 1
-
-Visión Artificial
-
-Responsabilidades:
-
-* OpenCV.
-* Webcam.
-* YOLO.
-* Detecciones.
+Gemini genera recomendaciones.
 
 ---
 
-## Integrante 2
+### Demo 6
 
-Dashboard
-
-Responsabilidades:
-
-* Streamlit.
-* Indicadores.
-* Visualización.
+FiftyOne muestra datasets y métricas.
 
 ---
 
-## Integrante 3
+## ¿Por qué esta versión es más fuerte?
 
-Agente IA
+Porque combina simultáneamente:
 
-Responsabilidades:
+✅ Educación
+✅ Inclusión
+✅ Visión Artificial
+✅ IA Generativa
+✅ Analítica de Datos
+✅ Accesibilidad
+✅ Seguimiento Académico
+✅ FiftyOne como herramienta central
 
-* Gemini.
-* Prompts.
-* Recomendaciones.
-
----
-
-## Integrante 4
-
-Datos
-
-Responsabilidades:
-
-* FiftyOne.
-* Dataset.
-* Validación.
-* Métricas.
-
----
-
-# Factor Diferenciador
-
-La mayoría de equipos probablemente construirá:
-
-* Chatbots.
-* Tutores IA.
-* Dashboards tradicionales.
-
-Campus Guardian AI incorpora:
-
-* Visión artificial.
-* Detección en tiempo real.
-* Sistema de alerta temprana.
-* Agente IA para decisiones.
-* FiftyOne para análisis visual.
-
-Esto lo acerca más a una solución innovadora y demostrable en un hackathon de corta duración.
-
----
-
-# Objetivo Final de la Demo
-
-Mostrar cómo una cámara puede detectar señales tempranas de riesgo académico, convertirlas en métricas cuantificables y permitir que un agente de IA recomiende acciones concretas para mejorar el acompañamiento estudiantil.
+Con esta propuesta pueden presentarla como una **plataforma de campus inteligente e inclusivo**, no solo como un detector de estudiantes distraídos. Eso aumenta mucho las probabilidades de destacar frente a proyectos que sean únicamente chatbots o dashboards.
