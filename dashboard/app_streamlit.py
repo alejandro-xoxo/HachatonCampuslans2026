@@ -14,20 +14,18 @@ from agent.gemini_agent import analizar_estudiante
 # --- Configuración de Página (Premium UI) ---
 st.set_page_config(
     page_title="Campus Guardian Access AI",
-    page_icon="📊",
+    page_icon="🌈",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- Inyección de CSS Personalizado para Alta Estética ---
+# --- Inyección de CSS Personalizado ---
 st.markdown("""
 <style>
-/* Ocultar elementos nativos de Streamlit */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
 
-/* Tipografía y fondo principal */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
 html, body, [class*="css"] {
     font-family: 'Outfit', sans-serif;
@@ -36,14 +34,10 @@ html, body, [class*="css"] {
     background-color: #070a13;
     color: #e2e8f0;
 }
-
-/* Barra lateral elegante */
 [data-testid="stSidebar"] {
     background-color: #0b0f19 !important;
     border-right: 1px solid #1e293b;
 }
-
-/* Modificar las cajas métricas nativas de Streamlit */
 div[data-testid="stMetric"] {
     background-color: #0b0f19 !important;
     border: 1px solid #1e293b !important;
@@ -76,7 +70,7 @@ def generar_diagnostico_local(datos: dict) -> dict:
         acc = "Registrar inasistencia y verificar causa médica o personal."
         rec = "Establecer canal de comunicación directa para evitar deserción por inasistencia continua."
     elif aei < 60:
-        diag = "Riesgo académico alto. Engagement general crítico debido a inactividad o distracciones graves."
+        diag = "Riesgo académico alto. Engagement crítico debido a inactividad o distracciones graves."
         if atencion < 50:
             acc = "Llamado de atención inmediato del tutor debido a uso recurrente de celulares o somnolencia."
             rec = "Promover pausas activas de 5 minutos y tutoría de concienciación sobre distractores."
@@ -121,11 +115,10 @@ st.session_state["gemini_api_key"] = api_key_input
 
 st.sidebar.divider()
 st.sidebar.markdown("""
-### 💡 Sugerencia para la Demo:
-1. Activa tu webcam con `detection_yolo.py`.
-2. Saca tu celular frente a la cámara.
-3. Observa la caída en el gráfico de atención.
-4. Presiona **Analizar con Mentor IA** para obtener las sugerencias en tiempo real.
+### 💡 Guía para el Pitch de Inclusión:
+1. Enciende la webcam (`detection_yolo.py`).
+2. En la pestaña **Aula Inclusiva**, simula el habla del profesor seleccionando una frase. Verás los subtítulos en pantalla.
+3. Presiona la tecla `S` en tu webcam para simular la respuesta del estudiante mudo por lenguaje de señas. Streamlit alertará en vivo al profesor.
 """)
 
 # --- Cargar Estado en Tiempo Real ---
@@ -145,7 +138,7 @@ aei_default = calcular_aei(
     estudiante_default["actividades"],
 )
 
-# Inicializar variables de estado persistentes en st.session_state
+# Inicializar st.session_state
 if "live_estudiante" not in st.session_state:
     st.session_state.live_estudiante = estudiante_default
     st.session_state.live_aei = aei_default
@@ -155,11 +148,10 @@ if "live_estudiante" not in st.session_state:
     st.session_state.live_is_live = False
     st.session_state.live_last_update = 0.0
     st.session_state.live_transcript = ""
+    st.session_state.profesor_subtitles = ""
 
 if LIVE_STATE_PATH.exists():
     try:
-        # Solo leemos si ha sido modificado recientemente
-        mtime = os.path.getmtime(LIVE_STATE_PATH)
         with open(LIVE_STATE_PATH, "r") as f:
             live_data = json.load(f)
         
@@ -179,14 +171,11 @@ if LIVE_STATE_PATH.exists():
             st.session_state.live_last_update = time.time()
             st.session_state.live_transcript = live_data.get("transcript", "")
     except Exception as e:
-        # Si la lectura falla por bloqueo temporal, usamos el estado guardado sin alterarlo
         pass
 
-# Timeout: Si no recibe actualizaciones en 5 segundos, la cámara se considera desconectada
 if st.session_state.live_is_live and (time.time() - st.session_state.live_last_update > 5.0):
     st.session_state.live_is_live = False
 
-# Asignar variables finales de renderizado
 estudiante = st.session_state.live_estudiante
 aei = st.session_state.live_aei
 frame_path = st.session_state.live_frame_path
@@ -197,7 +186,7 @@ is_live = st.session_state.live_is_live
 COLORES = {"verde": "#10b981", "amarillo": "#f59e0b", "rojo": "#ef4444"}
 color = COLORES.get(aei["estado"], "#4b5563")
 
-# --- Guardar Historial en session_state para Gráficos en Vivo ---
+# Historial para gráficos
 if "history" not in st.session_state:
     st.session_state.history = []
 
@@ -212,8 +201,8 @@ if is_live:
         st.session_state.history.pop(0)
 
 # --- UI Principal ---
-st.title("📊 Campus Guardian Access AI")
-st.markdown("<p style='color: #94a3b8; font-size: 1.1rem; margin-top: -10px;'>Monitoreo de Engagement y Accesibilidad del Aula</p>", unsafe_allow_html=True)
+st.title("🌈 Campus Guardian Access AI")
+st.markdown("<p style='color: #94a3b8; font-size: 1.1rem; margin-top: -10px;'>Plataforma Inteligente de Inclusión y Alerta Temprana Académica</p>", unsafe_allow_html=True)
 
 if is_live:
     st.success("🟢 Conexión en vivo activa: Recibiendo datos de la webcam")
@@ -222,159 +211,215 @@ else:
 
 st.divider()
 
-col_left, col_right = st.columns([1.8, 1.2])
+# Crear Pestañas: Aula Inclusiva y Analítica Engagement
+tab_inclusiva, tab_engagement = st.tabs(["🙋 Aula Inclusiva (Accesibilidad)", "📊 Analítica de Engagement (AEI)"])
 
-with col_left:
-    st.markdown(f"##### Estudiante: <span style='color: #ffffff; font-weight: 700;'>{estudiante['nombre']}</span>", unsafe_allow_html=True)
+# ----------------- PESTAÑA AULA INCLUSIVA -----------------
+with tab_inclusiva:
+    col_inc_left, col_inc_right = st.columns([1.6, 1.4])
     
-    # AEI Score Card con borde brillante en lugar de fondo sólido chinchoso
-    st.markdown(
-        f"""
-        <div style="background-color: #0b0f19;
-                    border: 2px solid {color};
-                    border-radius: 12px;
-                    padding: 24px;
-                    text-align: center;
-                    box-shadow: 0 0 20px {color}15;
-                    margin-bottom: 24px;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 3.8rem; font-weight: 800;">{aei['score']}</h1>
-            <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.95rem; font-weight: 600; letter-spacing: 1px;">ACADEMIC ENGAGEMENT INDEX (AEI)</p>
-            <span style="color: {color}; font-size: 0.9rem; font-weight: 700; border: 1px solid {color}; padding: 3px 12px; border-radius: 20px; display: inline-block; margin-top: 10px;">
-                ESTADO: {aei['estado'].upper()}
-            </span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # Métricas Individuales
-    st.markdown("<p style='color: #94a3b8; font-weight: 600; margin-bottom: 10px;'>Métricas Analíticas</p>", unsafe_allow_html=True)
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("🏫 Asistencia", f"{estudiante['asistencia']:.1f}%")
-    m2.metric("🧠 Atención", f"{estudiante['atencion']:.1f}%")
-    m3.metric("🙋 Participación", f"{estudiante['participacion']:.1f}%")
-    m4.metric("📝 Actividades", f"{estudiante['actividades']:.1f}%")
-    
-    st.divider()
-
-    # Gráfico Histórico
-    if is_live and st.session_state.history:
-        st.markdown("<p style='color: #94a3b8; font-weight: 600; margin-bottom: 10px;'>📈 Curva Dinámica de Engagement (Últimos 30s)</p>", unsafe_allow_html=True)
-        df_hist = pd.DataFrame(st.session_state.history)
-        st.line_chart(df_hist.set_index("Segundo"))
-    else:
-        st.info("El gráfico de curvas dinámicas se activará al encender el script de la webcam.")
-
-with col_right:
-    st.markdown("##### 🎥 Feed de Cámara")
-    
-    if is_live and frame_path and os.path.exists(frame_path):
-        st.image(frame_path, use_container_width=True)
+    with col_inc_left:
+        st.markdown("### 🔊 Comunicación Bidireccional Inclusiva")
         
-        # Objetos detectados en tarjetas minimalistas
-        st.markdown("<p style='color: #94a3b8; font-weight: 600; margin-top: 15px;'>Objetos en Escena</p>", unsafe_allow_html=True)
-        cell_detected = False
-        o1, o2 = st.columns(2)
+        # Subtítulos: Profesor -> Estudiante Sordo
+        st.markdown("##### 1. Profesor ➔ Estudiante Sordo (Subtítulos con Whisper STT)")
+        frases_profesor = [
+            "Selecciona una frase para simular el habla del Profesor...",
+            "Bienvenidos a la clase de hoy. Hoy veremos Python.",
+            "Por favor, abran su editor de código.",
+            "El examen parcial de Visión Artificial será la próxima semana.",
+            "¿Alguien tiene alguna pregunta sobre el modelo YOLOv8?"
+        ]
         
-        with o1:
-            if counts.get("person", 0) > 0:
-                st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #10b981; font-weight: 600;'>👤 Alumno Presente</div>", unsafe_allow_html=True)
-            else:
-                st.markdown("<div style='background-color: #0b0f19; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 600;'>👤 Alumno Ausente</div>", unsafe_allow_html=True)
-                
-            if counts.get("laptop", 0) > 0:
-                st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #60a5fa; font-weight: 600; margin-top: 8px;'>💻 Laptop Activa</div>", unsafe_allow_html=True)
-        
-        with o2:
-            if counts.get("cell phone", 0) > 0:
-                st.markdown("<div style='background-color: #ef444415; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700;'>📱 Celular Activo</div>", unsafe_allow_html=True)
-                cell_detected = True
-            elif counts.get("drowsy", 0) > 0:
-                st.markdown("<div style='background-color: #ef444415; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700;'>😴 Somnoliento</div>", unsafe_allow_html=True)
-                cell_detected = True
-            else:
-                st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #94a3b8; font-weight: 600;'>🚨 Sin Celular/Somno</div>", unsafe_allow_html=True)
-                
-        if not cell_detected and counts.get("person", 0) > 0:
-            st.markdown("<p style='color: #10b981; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>✨ Atención óptima registrada en este frame</p>", unsafe_allow_html=True)
-        elif counts.get("drowsy", 0) > 0:
-            st.markdown("<p style='color: #ef4444; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>😴 Alerta: Somnolencia/Fatiga crítica detectada</p>", unsafe_allow_html=True)
-
-        # --- Panel de Aula Inclusiva (Accesibilidad) ---
-        st.markdown("<p style='color: #94a3b8; font-weight: 600; margin-top: 15px;'>🙋 Aula Inclusiva (Accesibilidad)</p>", unsafe_allow_html=True)
-        if st.session_state.live_transcript:
+        frase_sel = st.selectbox("Micrófono del Profesor (Audio en Vivo):", frases_profesor)
+        if frase_sel != frases_profesor[0]:
+            st.session_state.profesor_subtitles = frase_sel
+            
+        if st.session_state.profesor_subtitles:
             st.markdown(
                 f"""
-                <div style="background-color: #6366f115; border: 1px solid #6366f1; padding: 12px; border-radius: 8px; text-align: center;">
-                    <strong style="color: #818cf8; font-size: 0.8rem; text-transform: uppercase;">Seña Detectada (Mudo ➔ Profesor)</strong><br/>
-                    <span style="color: #ffffff; font-size: 1.05rem; font-weight: 700;">"{st.session_state.live_transcript}"</span>
+                <div style="background-color: #0b0f19; border: 2px dashed #10b981; padding: 18px; border-radius: 10px; text-align: center; margin-top: 10px;">
+                    <span style="color: #10b981; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Pantalla del Estudiante Sordo (Subtítulos Whisper)</span><br/>
+                    <span style="color: #ffffff; font-size: 1.35rem; font-weight: 700; display: inline-block; margin-top: 5px;">[ {st.session_state.profesor_subtitles} ]</span>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
         else:
-            st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #64748b; font-size: 0.85rem; text-align: center;'>Esperando lenguaje de señas (presiona 'S' en la cámara)...</div>", unsafe_allow_html=True)
-    else:
-        st.markdown(
-            """
-            <div style="background-color:#0b0f19; border: 1px dashed #1e293b;
-                        height: 250px; border-radius: 12px; display: flex;
-                        justify-content: center; align-items: center; color: #64748b;">
-                <span>Esperando feed de la webcam...</span>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    st.divider()
-
-    # Módulo de Mentor IA
-    st.markdown("##### 🤖 Análisis del Mentor IA")
-    
-    if "diagnostico_ia" not in st.session_state:
-        st.session_state.diagnostico_ia = None
-
-    if st.button("Analizar comportamiento con IA", use_container_width=True):
-        datos_para_ia = {
-            "aei": aei["score"],
-            "estado": aei["estado"],
-            "asistencia": estudiante["asistencia"],
-            "atencion": estudiante["atencion"],
-            "participacion": estudiante["participacion"],
-            "actividades": estudiante["actividades"],
-        }
+            st.info("El profesor no ha hablado aún. Selecciona una frase arriba para activar los subtítulos del estudiante sordo.")
+            
+        st.divider()
         
-        if st.session_state.get("gemini_api_key"):
-            with st.spinner("Llamando a Gemini 2.0..."):
-                try:
-                    resultado = analizar_estudiante(datos_para_ia, api_key=st.session_state["gemini_api_key"])
-                    st.session_state.diagnostico_ia = resultado
-                    st.success("Diagnóstico generado exitosamente")
-                except Exception:
-                    st.session_state.diagnostico_ia = generar_diagnostico_local(datos_para_ia)
+        # Lenguaje de Señas: Estudiante Mudo -> Profesor
+        st.markdown("##### 2. Estudiante Mudo ➔ Profesor (Lenguaje de Señas con Visión)")
+        
+        if st.session_state.live_transcript:
+            # Alerta roja visual llamativa para llamar la atención del profesor
+            st.markdown(
+                f"""
+                <div style="background-color: #ef444420; border: 2px solid #ef4444; padding: 16px; border-radius: 10px; text-align: center; margin-bottom: 15px; animation: pulse 2s infinite;">
+                    <h4 style="color: #ef4444; margin: 0; font-weight: 700;">🙋 SOLICITUD DE PALABRA EN CURSO</h4>
+                    <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 1.1rem; font-weight: 600;">Seña Detectada en Carlos López: <strong>"{st.session_state.live_transcript}"</strong></p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
-            st.session_state.diagnostico_ia = generar_diagnostico_local(datos_para_ia)
+            st.markdown(
+                """
+                <div style="background-color: #0b0f19; border: 1px solid #1e293b; padding: 20px; border-radius: 10px; text-align: center; color: #64748b;">
+                    <span>Esperando traducción de señas... (Presiona la tecla <strong>'S'</strong> en la cámara para simular una seña)</span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
+    with col_inc_right:
+        st.markdown("### 🎥 Feed de Cámara Web (Visión)")
+        if is_live and frame_path and os.path.exists(frame_path):
+            st.image(frame_path, use_container_width=True)
+            
+            # Tarjetas de estado minimalistas
+            st.markdown("##### Módulos de Visión Activos")
+            o1, o2 = st.columns(2)
+            with o1:
+                if counts.get("sign_language", 0) > 0:
+                    st.markdown("<div style='background-color: #6366f120; border: 1px solid #6366f1; padding: 10px; border-radius: 8px; color: #818cf8; font-weight: 700; text-align: center;'>🤟 Lenguaje de Señas: ACTIVO</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #64748b; font-weight: 600; text-align: center;'>🤟 Lenguaje de Señas: Esperando</div>", unsafe_allow_html=True)
+            with o2:
+                if counts.get("person", 0) > 0:
+                    st.markdown("<div style='background-color: #10b98120; border: 1px solid #10b981; padding: 10px; border-radius: 8px; color: #10b981; font-weight: 700; text-align: center;'>👤 Presencia: REGISTRADA</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown("<div style='background-color: #ef444420; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700; text-align: center;'>👤 Presencia: AUSENTE</div>", unsafe_allow_html=True)
+        else:
+            st.markdown(
+                """
+                <div style="background-color:#0b0f19; border: 1px dashed #1e293b;
+                            height: 280px; border-radius: 12px; display: flex;
+                            justify-content: center; align-items: center; color: #64748b;">
+                    <span>Inicia vision/detection_yolo.py para conectar la cámara</span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-    if st.session_state.diagnostico_ia:
-        res = st.session_state.diagnostico_ia
+# ----------------- PESTAÑA ANALÍTICA DE ENGAGEMENT -----------------
+with tab_engagement:
+    col_eng_left, col_eng_right = st.columns([1.8, 1.2])
+    
+    with col_eng_left:
+        st.markdown(f"##### Estudiante: <span style='color: #ffffff; font-weight: 700;'>{estudiante['nombre']}</span>", unsafe_allow_html=True)
+        
+        # AEI Score Card
         st.markdown(
             f"""
-            <div style="background-color: #0b0f19; border: 1px solid #1e293b; border-left: 4px solid #60a5fa; padding: 14px; border-radius: 8px; margin-bottom: 8px;">
-                <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Diagnóstico</span><br/>
-                <span style="color: #ffffff; font-size: 0.95rem;">{res.get('diagnostico', 'N/A')}</span>
-            </div>
-            <div style="background-color: #0b0f19; border: 1px solid #1e293b; border-left: 4px solid #ef4444; padding: 14px; border-radius: 8px; margin-bottom: 8px;">
-                <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Acción Inmediata</span><br/>
-                <span style="color: #ffffff; font-size: 0.95rem;">{res.get('accion', 'N/A')}</span>
-            </div>
-            <div style="background-color: #0b0f19; border: 1px solid #1e293b; border-left: 4px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 8px;">
-                <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Recomendación</span><br/>
-                <span style="color: #ffffff; font-size: 0.95rem;">{res.get('recomendacion', 'N/A')}</span>
+            <div style="background-color: #0b0f19; border: 2px solid {color}; border-radius: 12px; padding: 24px; text-align: center; box-shadow: 0 0 20px {color}15; margin-bottom: 24px;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 3.8rem; font-weight: 800;">{aei['score']}</h1>
+                <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.95rem; font-weight: 600; letter-spacing: 1px;">ACADEMIC ENGAGEMENT INDEX (AEI)</p>
+                <span style="color: {color}; font-size: 0.9rem; font-weight: 700; border: 1px solid {color}; padding: 3px 12px; border-radius: 20px; display: inline-block; margin-top: 10px;">
+                    ESTADO: {aei['estado'].upper()}
+                </span>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-# --- Auto-refresh de 1 segundo ---
+        # Métricas individuales
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("🏫 Asistencia", f"{estudiante['asistencia']:.1f}%")
+        m2.metric("🧠 Atención", f"{estudiante['atencion']:.1f}%")
+        m3.metric("🙋 Participación", f"{estudiante['participacion']:.1f}%")
+        m4.metric("📝 Actividades", f"{estudiante['actividades']:.1f}%")
+        
+        st.divider()
+
+        # Gráfico dinámico
+        if is_live and st.session_state.history:
+            st.markdown("<p style='color: #94a3b8; font-weight: 600; margin-bottom: 10px;'>📈 Curva Dinámica de Engagement (Últimos 30s)</p>", unsafe_allow_html=True)
+            df_hist = pd.DataFrame(st.session_state.history)
+            st.line_chart(df_hist.set_index("Segundo"))
+        else:
+            st.info("El gráfico de curvas se activará al encender el script de la webcam.")
+
+    with col_eng_right:
+        st.markdown("##### 📱 Distracciones y Somnolencia (YOLO + MediaPipe)")
+        
+        # Tarjetas de alertas de distracción
+        if is_live:
+            cell_active = counts.get("cell phone", 0) > 0
+            drowsy_active = counts.get("drowsy", 0) > 0
+            
+            d1, d2 = st.columns(2)
+            with d1:
+                if cell_active:
+                    st.markdown("<div style='background-color: #ef444420; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700; text-align: center;'>📱 Celular: DETECTADO</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #94a3b8; font-weight: 600; text-align: center;'>📱 Celular: Ninguno</div>", unsafe_allow_html=True)
+            with d2:
+                if drowsy_active:
+                    st.markdown("<div style='background-color: #ef444420; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700; text-align: center;'>😴 Somnoliento: ALERTA</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #94a3b8; font-weight: 600; text-align: center;'>😴 Somnoliento: Normal</div>", unsafe_allow_html=True)
+                    
+            if cell_active:
+                st.markdown("<p style='color: #ef4444; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>📱 Estudiante distraído con el teléfono celular.</p>", unsafe_allow_html=True)
+            elif drowsy_active:
+                st.markdown("<p style='color: #ef4444; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>😴 Fatiga severa registrada (Ojos cerrados / Somnolencia).</p>", unsafe_allow_html=True)
+            elif counts.get("person", 0) > 0:
+                st.markdown("<p style='color: #10b981; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>✨ Estudiante enfocado y libre de distracciones.</p>", unsafe_allow_html=True)
+        else:
+            st.info("Conecta la webcam para iniciar el monitoreo de distracciones.")
+            
+        st.divider()
+
+        # Recomendaciones de Mentor IA
+        st.markdown("##### 🤖 Análisis del Mentor IA")
+        
+        if "diagnostico_ia" not in st.session_state:
+            st.session_state.diagnostico_ia = None
+
+        if st.button("Analizar comportamiento con IA", use_container_width=True):
+            datos_para_ia = {
+                "aei": aei["score"],
+                "estado": aei["estado"],
+                "asistencia": estudiante["asistencia"],
+                "atencion": estudiante["atencion"],
+                "participacion": estudiante["participacion"],
+                "actividades": estudiante["actividades"],
+            }
+            
+            if st.session_state.get("gemini_api_key"):
+                with st.spinner("Llamando a Gemini 2.0..."):
+                    try:
+                        resultado = analizar_estudiante(datos_para_ia, api_key=st.session_state["gemini_api_key"])
+                        st.session_state.diagnostico_ia = resultado
+                        st.success("Diagnóstico generado exitosamente")
+                    except Exception:
+                        st.session_state.diagnostico_ia = generar_diagnostico_local(datos_para_ia)
+            else:
+                st.session_state.diagnostico_ia = generar_diagnostico_local(datos_para_ia)
+
+        if st.session_state.diagnostico_ia:
+            res = st.session_state.diagnostico_ia
+            st.markdown(
+                f"""
+                <div style="background-color: #0b0f19; border: 1px solid #1e293b; border-left: 4px solid #60a5fa; padding: 14px; border-radius: 8px; margin-bottom: 8px;">
+                    <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Diagnóstico</span><br/>
+                    <span style="color: #ffffff; font-size: 0.95rem;">{res.get('diagnostico', 'N/A')}</span>
+                </div>
+                <div style="background-color: #0b0f19; border: 1px solid #1e293b; border-left: 4px solid #ef4444; padding: 14px; border-radius: 8px; margin-bottom: 8px;">
+                    <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Acción Inmediata</span><br/>
+                    <span style="color: #ffffff; font-size: 0.95rem;">{res.get('accion', 'N/A')}</span>
+                </div>
+                <div style="background-color: #0b0f19; border: 1px solid #1e293b; border-left: 4px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 8px;">
+                    <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Recomendación</span><br/>
+                    <span style="color: #ffffff; font-size: 0.95rem;">{res.get('recomendacion', 'N/A')}</span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+# --- Auto-refresh ---
 time.sleep(1.0)
 st.rerun()
