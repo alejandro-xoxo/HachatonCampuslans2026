@@ -1,3 +1,8 @@
 .venv/
 __pycache__/
 *.pyc
+.env
+yolov8n.pt
+data/frames/
+data/live_state.json*
+data/live_frame.jpg
