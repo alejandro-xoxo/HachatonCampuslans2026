@@ -143,6 +143,10 @@ while cap.isOpened():
 
     cv2.imshow("Campus Guardian - Deteccion", frame)
 
+    # Introducir un pequeño delay (~200ms) para regularizar la tasa de procesamiento a ~5 FPS.
+    # Esto disminuye drásticamente el uso de CPU/GPU y evita bloqueos o sobrecalentamiento.
+    time.sleep(0.2)
+
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 

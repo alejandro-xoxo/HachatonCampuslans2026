@@ -4,6 +4,8 @@ Uso:
 """
 import json
 import sys
+import os
+from pathlib import Path
 
 import fiftyone as fo
 from fiftyone import ViewField as F
@@ -49,6 +51,18 @@ try:
         )
         dataset.add_sample(sample)
         print(f"[pipeline] +1 sample ({len(dataset)} total)", file=sys.stderr)
+
+        # Mantenemos el dataset acotado a los últimos 100 samples para evitar sobrecarga en memoria y disco
+        if len(dataset) > 100:
+            try:
+                oldest_sample = dataset.first()
+                if oldest_sample:
+                    old_path = oldest_sample.filepath
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                    dataset.delete_sample(oldest_sample.id)
+            except Exception as ex:
+                print(f"[pipeline] Error limpiando sample antiguo: {ex}", file=sys.stderr)
 
 except KeyboardInterrupt:
     pass
