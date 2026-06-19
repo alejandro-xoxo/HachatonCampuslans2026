@@ -12,14 +12,18 @@ def _hash_datos(datos: dict) -> str:
 
 _cache: dict = {}
 
-def analizar_estudiante(datos: dict) -> dict:
+def analizar_estudiante(datos: dict, api_key: str = None) -> dict:
     clave = _hash_datos(datos)
     if clave in _cache:
         return _cache[clave]
 
-    api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise EnvironmentError("La variable de entorno GEMINI_API_KEY no está definida.")
+        api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise EnvironmentError(
+            "La variable de entorno GEMINI_API_KEY no está definida "
+            "ni se ingresó una clave en la barra lateral del Dashboard."
+        )
 
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel("gemini-2.0-flash-lite")

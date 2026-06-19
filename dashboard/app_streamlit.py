@@ -13,6 +13,17 @@ from agent.gemini_agent import analizar_estudiante
 # --- Configuración de Página ---
 st.set_page_config(page_title="Dashboard AEI - Campus Guardian", layout="wide")
 
+# --- Barra Lateral para Configuración de API Key ---
+st.sidebar.title("Configuración de IA")
+api_key_env = os.environ.get("GEMINI_API_KEY", "")
+api_key_input = st.sidebar.text_input(
+    "Google Gemini API Key",
+    value=st.session_state.get("gemini_api_key", api_key_env),
+    type="password",
+    help="Si no tienes la variable de entorno GEMINI_API_KEY en tu sistema, ingrésala aquí."
+)
+st.session_state["gemini_api_key"] = api_key_input
+
 # --- Intentar cargar estado en tiempo real ---
 LIVE_STATE_PATH = Path(__file__).parent.parent / "data" / "live_state.json"
 
@@ -116,7 +127,7 @@ with col_left:
                     "atencion": estudiante["atencion"],
                     "participacion": estudiante["participacion"],
                     "actividades": estudiante["actividades"],
-                })
+                }, api_key=st.session_state.get("gemini_api_key"))
                 st.session_state.diagnostico_ia = resultado
                 st.success("✅ Diagnóstico generado")
             except EnvironmentError as e:
