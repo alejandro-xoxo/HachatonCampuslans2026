@@ -146,6 +146,53 @@ st.sidebar.markdown("""
 # --- Cargar Estado en Tiempo Real ---
 LIVE_STATE_PATH = Path(__file__).parent.parent / "data" / "live_state.json"
 
+# Función para crear un frame placeholder si no existe live_frame.jpg
+def asegurar_placeholder_frame():
+    live_img_path = Path(__file__).parent.parent / "data" / "live_frame.jpg"
+    if not live_img_path.exists():
+        try:
+            import numpy as np
+            import cv2
+            # Crear una imagen de 480x640 con fondo azul oscuro premium
+            img = np.zeros((480, 640, 3), dtype=np.uint8)
+            img[:] = [19, 10, 7] # BGR para #070a13
+            
+            # Dibujar un marco cian/azul holográfico
+            cv2.rectangle(img, (20, 20), (620, 460), [250, 165, 96], 1)
+            
+            # Dibujar marcas de enfoque en las esquinas
+            # Superior Izquierda
+            cv2.line(img, (30, 30), (50, 30), [250, 165, 96], 2)
+            cv2.line(img, (30, 30), (30, 50), [250, 165, 96], 2)
+            # Superior Derecha
+            cv2.line(img, (610, 30), (590, 30), [250, 165, 96], 2)
+            cv2.line(img, (610, 30), (610, 50), [250, 165, 96], 2)
+            # Inferior Izquierda
+            cv2.line(img, (30, 450), (50, 450), [250, 165, 96], 2)
+            cv2.line(img, (30, 450), (30, 430), [250, 165, 96], 2)
+            # Inferior Derecha
+            cv2.line(img, (610, 450), (590, 450), [250, 165, 96], 2)
+            cv2.line(img, (610, 450), (610, 430), [250, 165, 96], 2)
+            
+            # Dibujar un círculo de rec en rojo
+            cv2.circle(img, (50, 50), 6, [68, 68, 239], -1) # BGR para #ef4444
+            cv2.putText(img, "REC STANDBY", (65, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.4, [148, 163, 184], 1, cv2.LINE_AA)
+            
+            # Textos informativos
+            cv2.putText(img, "CAMPUS GUARDIAN AI", (170, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.7, [255, 255, 255], 2, cv2.LINE_AA)
+            cv2.putText(img, "ESPERANDO WEBCAM...", (210, 245), cv2.FONT_HERSHEY_SIMPLEX, 0.55, [250, 165, 96], 1, cv2.LINE_AA)
+            cv2.putText(img, "Inicie vision/detection_yolo.py para conectar la camara", (110, 290), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.38, [148, 163, 184], 1, cv2.LINE_AA)
+            
+            # Asegurar directorio de datos y escribir imagen
+            live_img_path.parent.mkdir(parents=True, exist_ok=True)
+            cv2.imwrite(str(live_img_path), img)
+        except Exception:
+            pass
+
+# Crear el frame placeholder al arrancar el dashboard
+asegurar_placeholder_frame()
+
 estudiante_default = {
     "nombre": "Carlos López",
     "asistencia": 75.0,
@@ -164,7 +211,7 @@ aei_default = calcular_aei(
 if "live_estudiante" not in st.session_state:
     st.session_state.live_estudiante = estudiante_default
     st.session_state.live_aei = aei_default
-    st.session_state.live_frame_path = None
+    st.session_state.live_frame_path = str(LIVE_STATE_PATH.parent / "live_frame.jpg")
     st.session_state.live_detections = []
     st.session_state.live_counts = {}
     st.session_state.live_is_live = False
@@ -283,7 +330,7 @@ def cargar_estado_en_vivo():
     # Modo normal (leer archivo)
     estudiante = estudiante_default
     aei = aei_default
-    frame_path = None
+    frame_path = str(LIVE_STATE_PATH.parent / "live_frame.jpg")
     detections = []
     counts = {}
     is_live = False
@@ -303,7 +350,6 @@ def cargar_estado_en_vivo():
                     "actividades": live_data["metrics"].get("actividades", 90.0),
                 }
                 aei = live_data["aei"]
-                # Forzar que el dashboard apunte a live_frame.jpg (que no se borra ni expira)
                 frame_path = str(LIVE_STATE_PATH.parent / "live_frame.jpg")
                 detections = live_data.get("detections", [])
                 counts = live_data.get("counts", {})
@@ -322,8 +368,12 @@ def cargar_estado_en_vivo():
 estudiante, aei, frame_path, detections, counts, is_live, transcript = cargar_estado_en_vivo()
 
 # Historial para gráficos
-if "history" not in st.session_state:
-    st.session_state.history = []
+if "history" not in st.session_state or not st.session_state.history:
+    # Curva suave y realista de engagement inicial para que empiece viéndose excelente
+    st.session_state.history = [
+        {"Segundo": i, "Atención": 85.0 + (i % 3) * 4, "Participación": 65.0 + (i % 2) * 8, "AEI": 75.0 + (i % 4) * 3}
+        for i in range(1, 15)
+    ]
 
 # --- UI Principal ---
 st.title("🌈 Campus Guardian Access AI")

@@ -26,6 +26,9 @@ TARGETS = {"person", "cell phone", "laptop"}
 FRAMES_DIR = Path(__file__).parent.parent / "data" / "frames"
 FRAMES_DIR.mkdir(parents=True, exist_ok=True)
 
+# Bandera para guardar frames históricos en disco (desactivado por defecto para ahorrar E/S y almacenamiento)
+SAVE_HISTORIC_FRAMES = False
+
 model = YOLO("yolov8n.pt")
 cap = cv2.VideoCapture(0)
 
@@ -119,9 +122,9 @@ while cap.isOpened():
     live_img_path = Path(__file__).parent.parent / "data" / "live_frame.jpg"
     cv2.imwrite(str(live_img_path), frame)
 
-    # Solo guardamos el frame histórico y lo enviamos al pipeline de FiftyOne cada N frames
+    # Solo guardamos el frame histórico y lo enviamos al pipeline de FiftyOne cada N frames si la bandera está habilitada
     frame_counter += 1
-    should_save_historic = (frame_counter % 10 == 0)
+    should_save_historic = SAVE_HISTORIC_FRAMES and (frame_counter % 10 == 0)
 
     img_path = live_img_path
     if should_save_historic:
