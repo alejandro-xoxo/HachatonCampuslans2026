@@ -25,6 +25,7 @@ history_asistencia = []
 history_atencion = []
 history_participacion = []
 MAX_HISTORY = 60  # aproximadamente los últimos 60 frames
+frame_counter = 0
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -83,9 +84,31 @@ while cap.isOpened():
 
     aei_res = calcular_aei(avg_asistencia, avg_atencion, avg_participacion, 90.0)
 
-    # Guardar frame físico
-    img_path = FRAMES_DIR / f"frame_{int(time.time() * 1000)}.jpg"
-    cv2.imwrite(str(img_path), frame)
+    # Guardar frame en vivo para Streamlit (sobrescribir el mismo archivo para evitar latencia de I/O)
+    live_img_path = Path(__file__).parent.parent / "data" / "live_frame.jpg"
+    cv2.imwrite(str(live_img_path), frame)
+
+    # Solo guardamos el frame histórico y lo enviamos al pipeline de FiftyOne cada N frames
+    # (ej. cada 10 frames para evitar cuello de botella de E/S y lag en la webcam)
+    frame_counter += 1
+    should_save_historic = (frame_counter % 10 == 0)
+
+    img_path = live_img_path
+    if should_save_historic:
+        historic_path = FRAMES_DIR / f"frame_{int(time.time() * 1000)}.jpg"
+        cv2.imwrite(str(historic_path), frame)
+        img_path = historic_path
+
+        # Imprimir a stdout para que fiftyone_pipeline pueda seguir leyéndolo en pipe
+        print(json.dumps({
+            "frame": str(historic_path),
+            "counts": counts,
+            "detections": [{
+                "label": d["label"],
+                "conf": d["confidence"],
+                "bbox": d["bbox"]
+            } for d in detections]
+        }), flush=True)
 
     # Crear estado unificado conforme al contrato de datos schema.json
     state = {
@@ -117,17 +140,6 @@ while cap.isOpened():
     with open(temp_state_path, "w") as f:
         json.dump(state, f, indent=2)
     os.replace(temp_state_path, live_state_path)
-
-    # Imprimir a stdout para que fiftyone_pipeline pueda seguir leyéndolo en pipe si se desea
-    print(json.dumps({
-        "frame": str(img_path),
-        "counts": counts,
-        "detections": [{
-            "label": d["label"],
-            "conf": d["confidence"],
-            "bbox": d["bbox"]
-        } for d in detections]
-    }), flush=True)
 
     cv2.imshow("Campus Guardian - Deteccion", frame)
 

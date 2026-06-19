@@ -4,3 +4,5 @@ __pycache__/
 .env
 yolov8n.pt
 data/frames/
+data/live_state.json*
+data/live_frame.jpg
