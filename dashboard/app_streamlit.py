@@ -154,6 +154,7 @@ if "live_estudiante" not in st.session_state:
     st.session_state.live_counts = {}
     st.session_state.live_is_live = False
     st.session_state.live_last_update = 0.0
+    st.session_state.live_transcript = ""
 
 if LIVE_STATE_PATH.exists():
     try:
@@ -176,6 +177,7 @@ if LIVE_STATE_PATH.exists():
             st.session_state.live_counts = live_data.get("counts", {})
             st.session_state.live_is_live = True
             st.session_state.live_last_update = time.time()
+            st.session_state.live_transcript = live_data.get("transcript", "")
     except Exception as e:
         # Si la lectura falla por bloqueo temporal, usamos el estado guardado sin alterarlo
         pass
@@ -285,13 +287,33 @@ with col_right:
         
         with o2:
             if counts.get("cell phone", 0) > 0:
-                st.markdown("<div style='background-color: #ef444415; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700;'>🚨 Celular Activo</div>", unsafe_allow_html=True)
+                st.markdown("<div style='background-color: #ef444415; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700;'>📱 Celular Activo</div>", unsafe_allow_html=True)
+                cell_detected = True
+            elif counts.get("drowsy", 0) > 0:
+                st.markdown("<div style='background-color: #ef444415; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700;'>😴 Somnoliento</div>", unsafe_allow_html=True)
                 cell_detected = True
             else:
-                st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #94a3b8; font-weight: 600;'>🚨 Sin Celular</div>", unsafe_allow_html=True)
+                st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #94a3b8; font-weight: 600;'>🚨 Sin Celular/Somno</div>", unsafe_allow_html=True)
                 
         if not cell_detected and counts.get("person", 0) > 0:
             st.markdown("<p style='color: #10b981; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>✨ Atención óptima registrada en este frame</p>", unsafe_allow_html=True)
+        elif counts.get("drowsy", 0) > 0:
+            st.markdown("<p style='color: #ef4444; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>😴 Alerta: Somnolencia/Fatiga crítica detectada</p>", unsafe_allow_html=True)
+
+        # --- Panel de Aula Inclusiva (Accesibilidad) ---
+        st.markdown("<p style='color: #94a3b8; font-weight: 600; margin-top: 15px;'>🙋 Aula Inclusiva (Accesibilidad)</p>", unsafe_allow_html=True)
+        if st.session_state.live_transcript:
+            st.markdown(
+                f"""
+                <div style="background-color: #6366f115; border: 1px solid #6366f1; padding: 12px; border-radius: 8px; text-align: center;">
+                    <strong style="color: #818cf8; font-size: 0.8rem; text-transform: uppercase;">Seña Detectada (Mudo ➔ Profesor)</strong><br/>
+                    <span style="color: #ffffff; font-size: 1.05rem; font-weight: 700;">"{st.session_state.live_transcript}"</span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #64748b; font-size: 0.85rem; text-align: center;'>Esperando lenguaje de señas (presiona 'S' en la cámara)...</div>", unsafe_allow_html=True)
     else:
         st.markdown(
             """

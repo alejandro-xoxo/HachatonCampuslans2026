@@ -27,6 +27,11 @@ history_participacion = []
 MAX_HISTORY = 60  # aproximadamente los últimos 60 frames
 frame_counter = 0
 
+# Variables de simulación interactiva para el Pitch / Demo del jurado
+sim_drowsy = False
+sim_sign = False
+sim_absent = False
+
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
@@ -57,11 +62,14 @@ while cap.isOpened():
         cv2.putText(frame, f"{label} {conf:.2f}", (x1, y1 - 8),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2)
 
-    # --- Calcular métricas en tiempo real ---
-    asistencia_val = 100.0 if counts.get("person", 0) > 0 else 0.0
+    # --- Calcular métricas en tiempo real aplicando modificadores de simulación ---
+    person_count = 0 if sim_absent else counts.get("person", 0)
+    asistencia_val = 100.0 if person_count > 0 else 0.0
     
-    # Atención disminuye si hay celular o si no está presente
-    atencion_val = 0.0 if (counts.get("cell phone", 0) > 0 or asistencia_val == 0.0) else 100.0
+    # Atención disminuye si hay celular, si simula somnolencia o si no está presente
+    atencion_val = 100.0
+    if sim_drowsy or counts.get("cell phone", 0) > 0 or asistencia_val == 0.0:
+        atencion_val = 0.0
     
     # Participación base si está presente, aumenta si usa laptop
     if asistencia_val == 0.0:
@@ -89,7 +97,6 @@ while cap.isOpened():
     cv2.imwrite(str(live_img_path), frame)
 
     # Solo guardamos el frame histórico y lo enviamos al pipeline de FiftyOne cada N frames
-    # (ej. cada 10 frames para evitar cuello de botella de E/S y lag en la webcam)
     frame_counter += 1
     should_save_historic = (frame_counter % 10 == 0)
 
@@ -99,7 +106,7 @@ while cap.isOpened():
         cv2.imwrite(str(historic_path), frame)
         img_path = historic_path
 
-        # Imprimir a stdout para que fiftyone_pipeline pueda seguir leyéndolo en pipe
+        # Imprimir a stdout para que pipeline lea histórico
         print(json.dumps({
             "frame": str(historic_path),
             "counts": counts,
@@ -118,12 +125,12 @@ while cap.isOpened():
         "frame_path": str(img_path),
         "detections": detections,
         "counts": {
-            "person": counts.get("person", 0),
+            "person": person_count,
             "cell phone": counts.get("cell phone", 0),
             "laptop": counts.get("laptop", 0),
             "hand_raised": 0,
-            "drowsy": 0,
-            "sign_language": 0
+            "drowsy": 1 if sim_drowsy else 0,
+            "sign_language": 1 if sim_sign else 0
         },
         "metrics": {
             "asistencia": round(avg_asistencia, 2),
@@ -131,7 +138,8 @@ while cap.isOpened():
             "participacion": round(avg_participacion, 2),
             "actividades": 90.0
         },
-        "aei": aei_res
+        "aei": aei_res,
+        "transcript": "Tengo una pregunta (LENGUAJE DE SEÑAS)" if sim_sign else ""
     }
 
     # Escritura atómica de live_state.json para evitar lecturas corruptas de Streamlit
@@ -141,14 +149,27 @@ while cap.isOpened():
         json.dump(state, f, indent=2)
     os.replace(temp_state_path, live_state_path)
 
+    # Dibujar info de simulación en la ventana de OpenCV para guiar al presentador
+    cv2.putText(frame, "TECLAS DEMO:", (10, h - 80), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+    cv2.putText(frame, f"[D] Somnolencia: {'SI' if sim_drowsy else 'NO'}", (10, h - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255) if sim_drowsy else (0, 255, 0), 1)
+    cv2.putText(frame, f"[S] Senas (Inclusion): {'SI' if sim_sign else 'NO'}", (10, h - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 0) if sim_sign else (0, 255, 0), 1)
+    cv2.putText(frame, f"[A] Ausencia: {'SI' if sim_absent else 'NO'}", (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255) if sim_absent else (0, 255, 0), 1)
+
     cv2.imshow("Campus Guardian - Deteccion", frame)
 
-    # Introducir un pequeño delay (~200ms) para regularizar la tasa de procesamiento a ~5 FPS.
-    # Esto disminuye drásticamente el uso de CPU/GPU y evita bloqueos o sobrecalentamiento.
+    # Introducir delay para 5 FPS
     time.sleep(0.2)
 
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    # Captura de teclado local
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord("q"):
         break
+    elif key == ord("d"):
+        sim_drowsy = not sim_drowsy
+    elif key == ord("s"):
+        sim_sign = not sim_sign
+    elif key == ord("a"):
+        sim_absent = not sim_absent
 
 cap.release()
 cv2.destroyAllWindows()
