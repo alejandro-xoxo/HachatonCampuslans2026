@@ -151,18 +151,53 @@ Para iniciar todo el ecosistema de Campus Guardian, abre varias consolas y ejecu
   python vision/detection_yolo.py
   ```
 
-### 3. Terminal 3 (Opcional): Curación del Dataset Histórico (FiftyOne)
+## 💾 Integración y Uso de FiftyOne
+
+El proyecto utiliza **FiftyOne** para la gestión, análisis de calidad y curación de los datos recolectados por el sistema de visión artificial. Esto permite inspeccionar visualmente cuándo y por qué los estudiantes se distraen (por ejemplo, mostrando la detección de teléfonos celulares).
+
+### 🛠️ Lógica del Pipeline de Datos (`fiftyone_pipeline.py`)
+1. **Conexión por Tubería**: Recibe el flujo de frames y detecciones en formato JSON directamente del stdout de YOLOv8.
+2. **Control de Almacenamiento (FIFO)**: Para evitar que el disco se llene en el ordenador de la escuela, el pipeline mantiene la base de datos acotada a un máximo de **100 muestras**. Cuando ingresa un nuevo frame, el script borra automáticamente el archivo `.jpg` más antiguo y su registro.
+3. **Filtro de Distracciones**: Aplica una consulta dinámica sobre las detecciones para filtrar y mostrar en el panel únicamente los frames donde se detectó un teléfono celular (`cell phone`).
+
+---
+
+### 🚀 Cómo Ejecutar la Visualización con FiftyOne
+
+#### Opción A: Prueba de Instalación Rápida
+Si quieres comprobar que la librería funciona correctamente en tu máquina sin activar la cámara web:
 * **Linux / macOS**:
   ```bash
   source .venv/bin/activate
-  python fiftyone_app/fiftyone_pipeline.py
+  python test_fiftyone.py
   ```
 * **Windows (CMD / PowerShell)**:
   ```cmd
   .venv\Scripts\activate
-  python fiftyone_app/fiftyone_pipeline.py
+  python test_fiftyone.py
   ```
+*Esto creará un dataset simulado y abrirá el panel en tu navegador automáticamente.*
 
+#### Opción B: Pipeline de Visión + FiftyOne Acoplados (Captura Real)
+Para capturar video de tu cámara web e importarlo y filtrarlo en tiempo real hacia FiftyOne:
+* **Linux / macOS**:
+  ```bash
+  source .venv/bin/activate
+  python vision/detection_yolo.py | python fiftyone_app/fiftyone_pipeline.py
+  ```
+* **Windows (CMD / PowerShell)**:
+  ```cmd
+  .venv\Scripts\activate
+  python vision/detection_yolo.py | python fiftyone_app/fiftyone_pipeline.py
+  ```
+* **Inspección de Resultados**: 
+  1. Al presionar **Ctrl+C** en esa terminal, se cerrará la cámara web.
+  2. El pipeline calculará e imprimirá en consola estadísticas de detección (personas, celulares, laptops).
+  3. Se lanzará automáticamente la aplicación de FiftyOne en tu navegador en [http://localhost:5151](http://localhost:5151), mostrando la vista filtrada de distracciones (celulares).
+  4. Si deseas explorar el dataset completo sin el filtro de celulares, puedes abrirlo ejecutando:
+     ```bash
+     python -c "import fiftyone as fo; fo.launch_app(fo.load_dataset('campus_distracciones'))"
+     ```
 
 ---
 
@@ -171,3 +206,4 @@ Para iniciar todo el ecosistema de Campus Guardian, abre varias consolas y ejecu
 Para más detalles sobre la presentación comercial o el desarrollo técnico, consulta:
 * 🎤 **[pitch.md](file:///home/alejandro/Proyectos/HackATON/HachatonCampuslans2026/pitch.md)**: Estructura del pitch, propuesta de valor, guión paso a paso de la demo y propuesta de negocio.
 * ⚙️ **[technical_spec.md](file:///home/alejandro/Proyectos/HackATON/HachatonCampuslans2026/technical_spec.md)**: Especificación detallada de la arquitectura de datos, librerías y fragmentos de código de buenas prácticas aplicadas.
+
