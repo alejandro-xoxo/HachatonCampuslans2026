@@ -143,6 +143,25 @@ st.sidebar.markdown("""
 3. **Profesor STT**: Selecciona frases típicas del profesor para ver los subtítulos adaptados.
 """)
 
+st.sidebar.divider()
+st.sidebar.title("🛑 Acciones Globales")
+if st.sidebar.button("🔴 Detener Todo el Sistema", help="Detiene los procesos de la cámara web (YOLO) y apaga este servidor de Streamlit"):
+    st.sidebar.warning("Apagando sensores de cámara y deteniendo servidor Streamlit...")
+    try:
+        import subprocess
+        # Detener procesos de visión YOLO y base de datos FiftyOne
+        subprocess.run("pkill -f detection_yolo.py", shell=True)
+        subprocess.run("pkill -f fiftyone_pipeline.py", shell=True)
+    except Exception:
+        pass
+    
+    # Cerrar el propio proceso del servidor Streamlit
+    import os
+    import signal
+    time.sleep(1.0)
+    os.kill(os.getpid(), signal.SIGINT)
+
+
 # --- Cargar Estado en Tiempo Real ---
 LIVE_STATE_PATH = Path(__file__).parent.parent / "data" / "live_state.json"
 
