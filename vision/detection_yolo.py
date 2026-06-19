@@ -1,15 +1,22 @@
-import json
-import time
 import os
 import sys
+
+# Limitar variables de entorno para evitar contención de hilos y busy-waiting en CPU
+os.environ["OMP_NUM_THREADS"] = "2"
+os.environ["MKL_NUM_THREADS"] = "2"
+os.environ["OPENBLAS_NUM_THREADS"] = "2"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "2"
+os.environ["NUMEXPR_NUM_THREADS"] = "2"
+
+import json
+import time
 from pathlib import Path
 import cv2
 import torch
 from ultralytics import YOLO
 
-# Limitar hilos de PyTorch en CPU para un procesador Intel i5 de 8.ª generación (4 núcleos).
-# Previene la contención de hilos y deja recursos para que Streamlit y el OS funcionen fluidamente.
-torch.set_num_threads(4)
+# Limitar hilos en PyTorch a 2 para compatibilidad y fluidez total
+torch.set_num_threads(2)
 
 # Agregar la ruta base al path para importar el motor de analítica
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -34,8 +41,15 @@ frame_counter = 0
 
 # Variables de simulación interactiva para el Pitch / Demo del jurado
 sim_drowsy = False
-sim_sign = False
+sim_sign = 0  # 0: Ninguno, 1: Pregunta, 2: Ayuda, 3: Terminado
 sim_absent = False
+
+SIGN_TEXTS = {
+    0: "",
+    1: "Tengo una pregunta / Solicito participar",
+    2: "Necesito ayuda con el codigo / Soporte",
+    3: "Termine el ejercicio / Avance completado"
+}
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -139,7 +153,7 @@ while cap.isOpened():
             "laptop": counts.get("laptop", 0),
             "hand_raised": 0,
             "drowsy": 1 if sim_drowsy else 0,
-            "sign_language": 1 if sim_sign else 0
+            "sign_language": 1 if sim_sign > 0 else 0
         },
         "metrics": {
             "asistencia": round(avg_asistencia, 2),
@@ -148,7 +162,7 @@ while cap.isOpened():
             "actividades": 90.0
         },
         "aei": aei_res,
-        "transcript": "Tengo una pregunta (LENGUAJE DE SEÑAS)" if sim_sign else ""
+        "transcript": SIGN_TEXTS[sim_sign] if sim_sign > 0 else ""
     }
 
     # Escritura atómica de live_state.json para evitar lecturas corruptas de Streamlit
@@ -161,7 +175,7 @@ while cap.isOpened():
     # Dibujar info de simulación en la ventana de OpenCV para guiar al presentador
     cv2.putText(frame, "TECLAS DEMO:", (10, h - 80), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
     cv2.putText(frame, f"[D] Somnolencia: {'SI' if sim_drowsy else 'NO'}", (10, h - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255) if sim_drowsy else (0, 255, 0), 1)
-    cv2.putText(frame, f"[S] Senas (Inclusion): {'SI' if sim_sign else 'NO'}", (10, h - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 0) if sim_sign else (0, 255, 0), 1)
+    cv2.putText(frame, f"[S] Senas: {SIGN_TEXTS[sim_sign] if sim_sign > 0 else 'NO'}", (10, h - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 0) if sim_sign > 0 else (0, 255, 0), 1)
     cv2.putText(frame, f"[A] Ausencia: {'SI' if sim_absent else 'NO'}", (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255) if sim_absent else (0, 255, 0), 1)
 
     cv2.imshow("Campus Guardian - Deteccion", frame)
@@ -176,7 +190,7 @@ while cap.isOpened():
     elif key == ord("d"):
         sim_drowsy = not sim_drowsy
     elif key == ord("s"):
-        sim_sign = not sim_sign
+        sim_sign = (sim_sign + 1) % 4
     elif key == ord("a"):
         sim_absent = not sim_absent
 
