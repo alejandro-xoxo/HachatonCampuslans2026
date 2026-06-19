@@ -4,7 +4,12 @@ import os
 import sys
 from pathlib import Path
 import cv2
+import torch
 from ultralytics import YOLO
+
+# Limitar hilos de PyTorch en CPU para un procesador Intel i5 de 8.ª generación (4 núcleos).
+# Previene la contención de hilos y deja recursos para que Streamlit y el OS funcionen fluidamente.
+torch.set_num_threads(4)
 
 # Agregar la ruta base al path para importar el motor de analítica
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -37,7 +42,11 @@ while cap.isOpened():
     if not ret:
         break
 
-    results = model(frame, verbose=False)[0]
+    # Redimensionar el frame de captura a 640x480 para ahorrar CPU
+    frame = cv2.resize(frame, (640, 480))
+
+    # Inferencia optimizada a imgsz=320 (3x a 4x más veloz en CPU de 8.ª generación)
+    results = model(frame, imgsz=320, verbose=False)[0]
     h, w = frame.shape[:2]
     counts = {label: 0 for label in TARGETS}
     detections = []
