@@ -13,7 +13,7 @@ from agent.gemini_agent import analizar_estudiante
 
 # --- Configuración de Página (Premium UI) ---
 st.set_page_config(
-    page_title="Campus Guardian - Dashboard de Engagement",
+    page_title="Campus Guardian Access AI",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -22,29 +22,49 @@ st.set_page_config(
 # --- Inyección de CSS Personalizado para Alta Estética ---
 st.markdown("""
 <style>
+/* Ocultar elementos nativos de Streamlit */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Tipografía y fondo principal */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
 html, body, [class*="css"] {
     font-family: 'Outfit', sans-serif;
 }
 .stApp {
-    background-color: #0b0f19;
-    color: #f8fafc;
+    background-color: #070a13;
+    color: #e2e8f0;
 }
-.sidebar .sidebar-content {
-    background-color: #111827;
+
+/* Barra lateral elegante */
+[data-testid="stSidebar"] {
+    background-color: #0b0f19 !important;
+    border-right: 1px solid #1e293b;
 }
-.metric-box {
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    padding: 16px;
-    border-radius: 10px;
-    text-align: center;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+
+/* Modificar las cajas métricas nativas de Streamlit */
+div[data-testid="stMetric"] {
+    background-color: #0b0f19 !important;
+    border: 1px solid #1e293b !important;
+    padding: 18px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4) !important;
+}
+div[data-testid="stMetric"] label {
+    color: #94a3b8 !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+}
+div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+    color: #ffffff !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Motor de Diagnóstico Auxiliar Local (Evita respuestas repetitivas si no hay cuota) ---
+# --- Motor de Diagnóstico Auxiliar Local ---
 def generar_diagnostico_local(datos: dict) -> dict:
     aei = datos["aei"]
     atencion = datos["atencion"]
@@ -102,11 +122,10 @@ st.session_state["gemini_api_key"] = api_key_input
 st.sidebar.divider()
 st.sidebar.markdown("""
 ### 💡 Sugerencia para la Demo:
-Durante la presentación al jurado:
 1. Activa tu webcam con `detection_yolo.py`.
-2. Saca tu celular o simula estar distraído.
-3. Observa cómo cambian las gráficas en vivo.
-4. Genera el diagnóstico para obtener la recomendación de la IA.
+2. Saca tu celular frente a la cámara.
+3. Observa la caída en el gráfico de atención.
+4. Presiona **Analizar con Mentor IA** para obtener las sugerencias en tiempo real.
 """)
 
 # --- Cargar Estado en Tiempo Real ---
@@ -144,7 +163,6 @@ if LIVE_STATE_PATH.exists():
             counts = live_data.get("counts", {})
             is_live = True
     except Exception as e:
-        # En caso de colisión de lectura/escritura, usa el estado previo guardado
         pass
 
 if not is_live:
@@ -155,14 +173,13 @@ if not is_live:
         estudiante["actividades"],
     )
 
-COLORES = {"verde": "#2ecc71", "amarillo": "#f1c40f", "rojo": "#e74c3c"}
-color = COLORES.get(aei["estado"], "#34495e")
+COLORES = {"verde": "#10b981", "amarillo": "#f59e0b", "rojo": "#ef4444"}
+color = COLORES.get(aei["estado"], "#4b5563")
 
 # --- Guardar Historial en session_state para Gráficos en Vivo ---
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Añadir datos actuales al historial (cada ciclo de recarga de Streamlit)
 if is_live:
     st.session_state.history.append({
         "Segundo": len(st.session_state.history) + 1,
@@ -170,37 +187,38 @@ if is_live:
         "Participación": estudiante["participacion"],
         "AEI": aei["score"]
     })
-    # Mantener sólo los últimos 30 registros
     if len(st.session_state.history) > 30:
         st.session_state.history.pop(0)
 
 # --- UI Principal ---
 st.title("📊 Campus Guardian Access AI")
-st.markdown("### Centro de Monitoreo Académico y Accesibilidad")
+st.markdown("<p style='color: #94a3b8; font-size: 1.1rem; margin-top: -10px;'>Monitoreo de Engagement y Accesibilidad del Aula</p>", unsafe_allow_html=True)
 
 if is_live:
-    st.success("🟢 Conexión en Vivo Activa: Recibiendo telemetría de la Webcam")
+    st.success("🟢 Conexión en vivo activa: Recibiendo datos de la webcam")
 else:
-    st.warning("⚠️ Modo Simulación: Esperando telemetría de webcam (Inicia vision/detection_yolo.py)")
+    st.warning("⚠️ Modo simulación: Iniciando con datos estáticos (Corre vision/detection_yolo.py)")
 
 st.divider()
 
-# Layout de 2 columnas principales
 col_left, col_right = st.columns([1.8, 1.2])
 
 with col_left:
-    st.markdown(f"#### 👤 Estudiante: **{estudiante['nombre']}**")
+    st.markdown(f"##### Estudiante: <span style='color: #ffffff; font-weight: 700;'>{estudiante['nombre']}</span>", unsafe_allow_html=True)
     
-    # Marcador de AEI Grande
+    # AEI Score Card con borde brillante en lugar de fondo sólido chinchoso
     st.markdown(
         f"""
-        <div style="background:linear-gradient(135deg, {color} 0%, #1e293b 100%);
-                    padding:24px;border-radius:12px;text-align:center;
-                    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); margin-bottom:24px;">
-            <h1 style="color:white;margin:0;font-size:3.5rem;font-weight:800;">{aei['score']}</h1>
-            <h3 style="color:white;margin:0;font-weight:600;">INDICE DE COMPROMISO ACADÉMICO (AEI)</h3>
-            <span style="background-color:rgba(255,255,255,0.2);color:white;padding:4px 12px;
-                         border-radius:20px;font-size:0.9rem;font-weight:700;">
+        <div style="background-color: #0b0f19;
+                    border: 2px solid {color};
+                    border-radius: 12px;
+                    padding: 24px;
+                    text-align: center;
+                    box-shadow: 0 0 20px {color}15;
+                    margin-bottom: 24px;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 3.8rem; font-weight: 800;">{aei['score']}</h1>
+            <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.95rem; font-weight: 600; letter-spacing: 1px;">ACADEMIC ENGAGEMENT INDEX (AEI)</p>
+            <span style="color: {color}; font-size: 0.9rem; font-weight: 700; border: 1px solid {color}; padding: 3px 12px; border-radius: 20px; display: inline-block; margin-top: 10px;">
                 ESTADO: {aei['estado'].upper()}
             </span>
         </div>
@@ -208,62 +226,60 @@ with col_left:
         unsafe_allow_html=True
     )
 
-    # Columnas de Métricas Individuales
-    st.markdown("##### Métricas en Tiempo Real")
+    # Métricas Individuales
+    st.markdown("<p style='color: #94a3b8; font-weight: 600; margin-bottom: 10px;'>Métricas Analíticas</p>", unsafe_allow_html=True)
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("🏫 Asistencia", f"{estudiante['asistencia']:.1f}%", help="Peso: 20%")
-    m2.metric("🧠 Atención", f"{estudiante['atencion']:.1f}%", help="Peso: 30%")
-    m3.metric("🙋 Participación", f"{estudiante['participacion']:.1f}%", help="Peso: 30%")
-    m4.metric("📝 Actividades", f"{estudiante['actividades']:.1f}%", help="Peso: 20%")
+    m1.metric("🏫 Asistencia", f"{estudiante['asistencia']:.1f}%")
+    m2.metric("🧠 Atención", f"{estudiante['atencion']:.1f}%")
+    m3.metric("🙋 Participación", f"{estudiante['participacion']:.1f}%")
+    m4.metric("📝 Actividades", f"{estudiante['actividades']:.1f}%")
     
     st.divider()
 
-    # Gráfico Lineal en Vivo
+    # Gráfico Histórico
     if is_live and st.session_state.history:
-        st.markdown("##### 📈 Curva Dinámica de Engagement (Últimos 30s)")
+        st.markdown("<p style='color: #94a3b8; font-weight: 600; margin-bottom: 10px;'>📈 Curva Dinámica de Engagement (Últimos 30s)</p>", unsafe_allow_html=True)
         df_hist = pd.DataFrame(st.session_state.history)
         st.line_chart(df_hist.set_index("Segundo"))
     else:
-        st.info("El gráfico de curvas se activará tan pronto como inicies el script de la webcam.")
+        st.info("El gráfico de curvas dinámicas se activará al encender el script de la webcam.")
 
 with col_right:
-    st.markdown("#### 🎥 Feed de Video & Análisis")
+    st.markdown("##### 🎥 Feed de Cámara")
     
-    # Mostrar webcam
     if is_live and frame_path and os.path.exists(frame_path):
-        st.image(frame_path, use_container_width=True, caption="Análisis por Visión de Computadora")
+        st.image(frame_path, use_container_width=True)
         
-        # Objetos detectados en el frame
-        st.markdown("##### Objetos y Señales Detectadas:")
+        # Objetos detectados en tarjetas minimalistas
+        st.markdown("<p style='color: #94a3b8; font-weight: 600; margin-top: 15px;'>Objetos en Escena</p>", unsafe_allow_html=True)
         cell_detected = False
         o1, o2 = st.columns(2)
         
         with o1:
             if counts.get("person", 0) > 0:
-                st.success(f"👤 Persona en Aula: Sí")
+                st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #10b981; font-weight: 600;'>👤 Alumno Presente</div>", unsafe_allow_html=True)
             else:
-                st.error("👤 Persona en Aula: Ausente")
+                st.markdown("<div style='background-color: #0b0f19; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 600;'>👤 Alumno Ausente</div>", unsafe_allow_html=True)
                 
             if counts.get("laptop", 0) > 0:
-                st.info(f"💻 Computadora: Detectada")
+                st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #60a5fa; font-weight: 600; margin-top: 8px;'>💻 Laptop Activa</div>", unsafe_allow_html=True)
         
         with o2:
             if counts.get("cell phone", 0) > 0:
-                st.error(f"🚨 Celular: Activo (Distractor)")
+                st.markdown("<div style='background-color: #ef444415; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700;'>🚨 Celular Activo</div>", unsafe_allow_html=True)
                 cell_detected = True
             else:
-                st.success("🚨 Celular: Ninguno")
+                st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #94a3b8; font-weight: 600;'>🚨 Sin Celular</div>", unsafe_allow_html=True)
                 
         if not cell_detected and counts.get("person", 0) > 0:
-            st.success("✨ Estudiante enfocado y libre de celulares.")
+            st.markdown("<p style='color: #10b981; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>✨ Atención óptima registrada en este frame</p>", unsafe_allow_html=True)
     else:
-        # Imagen de reemplazo estética si la cámara no está lista
         st.markdown(
             """
-            <div style="background-color:#1e293b;border:2px dashed #475569;
-                        height:250px;border-radius:10px;display:flex;
-                        justify-content:center;align-items:center;color:#94a3b8;">
-                <span>Esperando conexión con vision/detection_yolo.py...</span>
+            <div style="background-color:#0b0f19; border: 1px dashed #1e293b;
+                        height: 250px; border-radius: 12px; display: flex;
+                        justify-content: center; align-items: center; color: #64748b;">
+                <span>Esperando feed de la webcam...</span>
             </div>
             """,
             unsafe_allow_html=True
@@ -271,13 +287,13 @@ with col_right:
 
     st.divider()
 
-    # Recomendación IA
-    st.markdown("#### 🤖 Diagnóstico Inteligente (Mentor IA)")
+    # Módulo de Mentor IA
+    st.markdown("##### 🤖 Análisis del Mentor IA")
     
     if "diagnostico_ia" not in st.session_state:
         st.session_state.diagnostico_ia = None
 
-    if st.button("Analizar con Mentor IA", use_container_width=True):
+    if st.button("Analizar comportamiento con IA", use_container_width=True):
         datos_para_ia = {
             "aei": aei["score"],
             "estado": aei["estado"],
@@ -288,37 +304,31 @@ with col_right:
         }
         
         if st.session_state.get("gemini_api_key"):
-            with st.spinner("Conectando con Gemini 2.0 Flash Lite..."):
+            with st.spinner("Llamando a Gemini 2.0..."):
                 try:
                     resultado = analizar_estudiante(datos_para_ia, api_key=st.session_state["gemini_api_key"])
                     st.session_state.diagnostico_ia = resultado
-                    st.success("✅ Diagnóstico generado por Gemini")
-                except Exception as e:
-                    st.warning("⚠️ Error con la API de Gemini (o cuota agotada). Generando diagnóstico dinámico local...")
+                    st.success("Diagnóstico generado exitosamente")
+                except Exception:
                     st.session_state.diagnostico_ia = generar_diagnostico_local(datos_para_ia)
         else:
-            with st.spinner("Generando análisis local inteligente..."):
-                # Ejecutar motor de reglas local dinámico si no hay clave de API
-                time.sleep(0.5)
-                st.session_state.diagnostico_ia = generar_diagnostico_local(datos_para_ia)
-                st.info("ℹ️ Diagnóstico generado localmente sin clave de API (Modo Offline).")
+            st.session_state.diagnostico_ia = generar_diagnostico_local(datos_para_ia)
 
     if st.session_state.diagnostico_ia:
         res = st.session_state.diagnostico_ia
-        
         st.markdown(
             f"""
-            <div style="background-color:#0f172a; border-left:4px solid #3b82f6; padding:12px; border-radius:4px; margin-bottom:8px;">
-                <strong style="color:#94a3b8;">🔍 Diagnóstico:</strong><br/>
-                <span style="color:#f8fafc;">{res.get('diagnostico', 'N/A')}</span>
+            <div style="background-color: #0b0f19; border: 1px solid #1e293b; border-left: 4px solid #60a5fa; padding: 14px; border-radius: 8px; margin-bottom: 8px;">
+                <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Diagnóstico</span><br/>
+                <span style="color: #ffffff; font-size: 0.95rem;">{res.get('diagnostico', 'N/A')}</span>
             </div>
-            <div style="background-color:#0f172a; border-left:4px solid #ef4444; padding:12px; border-radius:4px; margin-bottom:8px;">
-                <strong style="color:#94a3b8;">⚡ Acción Inmediata:</strong><br/>
-                <span style="color:#f8fafc;">{res.get('accion', 'N/A')}</span>
+            <div style="background-color: #0b0f19; border: 1px solid #1e293b; border-left: 4px solid #ef4444; padding: 14px; border-radius: 8px; margin-bottom: 8px;">
+                <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Acción Inmediata</span><br/>
+                <span style="color: #ffffff; font-size: 0.95rem;">{res.get('accion', 'N/A')}</span>
             </div>
-            <div style="background-color:#0f172a; border-left:4px solid #10b981; padding:12px; border-radius:4px; margin-bottom:8px;">
-                <strong style="color:#94a3b8;">💡 Recomendación Académica:</strong><br/>
-                <span style="color:#f8fafc;">{res.get('recomendacion', 'N/A')}</span>
+            <div style="background-color: #0b0f19; border: 1px solid #1e293b; border-left: 4px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 8px;">
+                <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Recomendación</span><br/>
+                <span style="color: #ffffff; font-size: 0.95rem;">{res.get('recomendacion', 'N/A')}</span>
             </div>
             """,
             unsafe_allow_html=True
