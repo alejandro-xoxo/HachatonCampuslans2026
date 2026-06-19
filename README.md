@@ -77,8 +77,14 @@ Para asegurar tasas de refresco fluidas de **5+ FPS** sin congelar el computador
 ## 🛠️ Requisitos e Instalación
 
 ### Requisitos Previos
-* **Python**: Versión 3.10 o superior (Recomendado: 3.14.x)
-* **Webcam**: Cualquier cámara web interna o USB estándar.
+* **Python**: Versión 3.10 o superior (Recomendado: 3.14.x).
+* **Webcam**: Cualquier cámara web interna o USB estándar conectada al sistema.
+* **Dependencias del Sistema (Esencial para Linux/Ubuntu)**:
+  Dado que el proyecto utiliza OpenCV para visión computacional, asegúrate de tener las librerías gráficas del sistema instaladas. En sistemas Debian/Ubuntu, ejecuta:
+  ```bash
+  sudo apt update
+  sudo apt install -y libgl1-mesa-glx libglib2.0-0 ffmpeg
+  ```
 
 ### Instalación Paso a Paso
 
@@ -88,14 +94,21 @@ Para asegurar tasas de refresco fluidas de **5+ FPS** sin congelar el computador
    cd HachatonCampuslans2026
    ```
 
-2. **Crear y Activar el Entorno Virtual**:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # En Windows usa: .venv\Scripts\activate
-   ```
+2. **Preparar el Entorno Virtual**:
+   * **Opción A: Usar el entorno virtual existente** (si ya lo tienes configurado en el directorio padre):
+     ```bash
+     source ../.venv/bin/activate
+     ```
+   * **Opción B: Crear un nuevo entorno virtual desde cero**:
+     ```bash
+     python -m venv .venv
+     source .venv/bin/activate  # En Windows usa: .venv\Scripts\activate
+     ```
 
-3. **Instalar Dependencias**:
+3. **Instalar Dependencias de Python**:
+   Una vez activado tu entorno virtual (Opción A o B), instala los paquetes requeridos:
    ```bash
+   pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
@@ -104,7 +117,8 @@ Para asegurar tasas de refresco fluidas de **5+ FPS** sin congelar el computador
    ```env
    GEMINI_API_KEY=tu_api_key_aqui
    ```
-   *Nota: Si no configuras la API key, el sistema activará automáticamente el motor de reglas offline.*
+   *Nota: Si no configuras la API key, la plataforma se ejecutará perfectamente en modo offline usando un motor de reglas determinista local para no detener la demo.*
+
 
 ---
 
