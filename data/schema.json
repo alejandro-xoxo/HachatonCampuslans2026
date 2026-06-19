@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CampusGuardianDataContract",
+  "description": "Contrato de datos entre los módulos de Visión (YOLOv8, MediaPipe, Whisper) y el Motor de Analítica (AEI) y Dashboard.",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "Identificador único del estudiante (e.g., 'carlos_lopez')."
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "Timestamp en formato ISO 8601 (o epoch millisecond) de la captura."
+    },
+    "frame_path": {
+      "type": "string",
+      "description": "Ruta al archivo de imagen del frame capturado."
+    },
+    "detections": {
+      "type": "array",
+      "description": "Detecciones de objetos y comportamientos encontradas en el frame.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "enum": ["person", "cell phone", "laptop", "hand_raised", "drowsy", "sign_language"],
+            "description": "Etiqueta de la detección (personas, celular, laptop, mano levantada, somnolencia, lenguaje de señas)."
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Nivel de confianza de la detección."
+          },
+          "bbox": {
+            "type": "array",
+            "description": "Bounding box normalizado [x, y, w, h].",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": ["label", "confidence", "bbox"]
+      }
+    },
+    "counts": {
+      "type": "object",
+      "description": "Resumen rápido del conteo de elementos detectados en el frame.",
+      "properties": {
+        "person": { "type": "integer", "minimum": 0 },
+        "cell phone": { "type": "integer", "minimum": 0 },
+        "laptop": { "type": "integer", "minimum": 0 },
+        "hand_raised": { "type": "integer", "minimum": 0 },
+        "drowsy": { "type": "integer", "minimum": 0 },
+        "sign_language": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "transcript": {
+      "type": "string",
+      "description": "Transcripción de audio (Whisper STT) si aplica en este frame/bloque de tiempo."
+    }
+  },
+  "required": ["student_id", "timestamp", "frame_path", "detections", "counts"]
+}
