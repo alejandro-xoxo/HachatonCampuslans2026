@@ -124,26 +124,45 @@ Para asegurar tasas de refresco fluidas de **5+ FPS** sin congelar el computador
 
 ## 🚀 Guía de Ejecución
 
-Para iniciar todo el ecosistema del Campus Guardian:
+Para iniciar todo el ecosistema de Campus Guardian, abre varias consolas y ejecuta los comandos según tu sistema operativo:
 
-1. **Terminal 1: Servidor del Dashboard (Streamlit)**
-   ```bash
-   source .venv/bin/activate
-   streamlit run dashboard/app_streamlit.py --server.port 8501
-   ```
-   *Accede en tu navegador a: [http://localhost:8501](http://localhost:8501)*
+### 1. Terminal 1: Servidor del Dashboard (Streamlit)
+* **Linux / macOS**:
+  ```bash
+  source .venv/bin/activate  # O: source ../.venv/bin/activate
+  streamlit run dashboard/app_streamlit.py --server.port 8501
+  ```
+* **Windows (CMD / PowerShell)**:
+  ```cmd
+  .venv\Scripts\activate
+  streamlit run dashboard/app_streamlit.py --server.port 8501
+  ```
+  *(Accede en tu navegador a: [http://localhost:8501](http://localhost:8501))*
 
-2. **Terminal 2: Bucle de Visión Artificial (YOLOv8 & MediaPipe)**
-   ```bash
-   source .venv/bin/activate
-   python vision/detection_yolo.py
-   ```
+### 2. Terminal 2: Bucle de Visión Artificial (YOLOv8 & MediaPipe)
+* **Linux / macOS**:
+  ```bash
+  source .venv/bin/activate  # O: source ../.venv/bin/activate
+  python vision/detection_yolo.py
+  ```
+* **Windows (CMD / PowerShell)**:
+  ```cmd
+  .venv\Scripts\activate
+  python vision/detection_yolo.py
+  ```
 
-3. **Terminal 3 (Opcional): Curación del Dataset Histórico (FiftyOne)**
-   ```bash
-   source .venv/bin/activate
-   python fiftyone_app/fiftyone_pipeline.py
-   ```
+### 3. Terminal 3 (Opcional): Curación del Dataset Histórico (FiftyOne)
+* **Linux / macOS**:
+  ```bash
+  source .venv/bin/activate
+  python fiftyone_app/fiftyone_pipeline.py
+  ```
+* **Windows (CMD / PowerShell)**:
+  ```cmd
+  .venv\Scripts\activate
+  python fiftyone_app/fiftyone_pipeline.py
+  ```
+
 
 ---
 
