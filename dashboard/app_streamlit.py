@@ -206,35 +206,7 @@ api_key_input = st.sidebar.text_input(
 )
 st.session_state["gemini_api_key"] = api_key_input
 
-st.sidebar.divider()
-st.sidebar.title("🎛️ Simulación Manual (Pitch/Demo)")
-modo_manual = st.sidebar.checkbox(
-    "Forzar Modo Manual",
-    value=False,
-    help="Activa este control para manejar la demo usando los controles de la barra lateral sin depender de la cámara web activa."
-)
-
-if modo_manual:
-    sim_presence = st.sidebar.selectbox("Asistencia (Estudiante)", ["Presente", "Ausente"])
-    if sim_presence == "Presente":
-        sim_distraction = st.sidebar.selectbox("Estado de Atención/Foco", ["Focalizado y Atento", "Distraído (Celular en mano)", "Fatigado (Somnoliento)"])
-        sim_sign_ui = st.sidebar.selectbox("Lenguaje de Señas (Simulado)", [
-            "Ninguno", 
-            "Solicitud de Participación (Tengo una pregunta)", 
-            "Solicitud de Soporte / Ayuda (Necesito ayuda con el código)", 
-            "Actividad Terminada (Terminé el ejercicio)"
-        ])
-    else:
-        sim_distraction = "Ausente"
-        sim_sign_ui = "Ninguno"
-
-st.sidebar.divider()
-st.sidebar.markdown("""
-### 💡 Guía para el Pitch de Inclusión:
-1. **Modo Cámara**: Enciende la webcam (`detection_yolo.py`) y usa `S` para cambiar la seña del estudiante.
-2. **Modo Manual**: Activa 'Forzar Modo Manual' arriba para simular la demo sin cámara.
-3. **Profesor STT**: Selecciona frases típicas del profesor para ver los subtítulos adaptados.
-""")
+modo_manual = False
 
 st.sidebar.divider()
 st.sidebar.title("🛑 Acciones Globales")
@@ -342,110 +314,8 @@ if "live_estudiante" not in st.session_state:
 if "profesor_log" not in st.session_state:
     st.session_state.profesor_log = []
 
-# Calcular simulación manual si modo_manual está activo
-if modo_manual:
-    asistencia_val = 100.0 if sim_presence == "Presente" else 0.0
-    
-    atencion_val = 100.0
-    if sim_presence == "Ausente":
-        atencion_val = 0.0
-    elif sim_distraction == "Distraído (Celular en mano)":
-        atencion_val = 20.0
-    elif sim_distraction == "Fatigado (Somnoliento)":
-        atencion_val = 10.0
-        
-    participacion_val = 70.0
-    if sim_presence == "Ausente":
-        participacion_val = 0.0
-    else:
-        if "Participación" in sim_sign_ui:
-            participacion_val = 100.0
-        elif "Soporte" in sim_sign_ui:
-            participacion_val = 90.0
-        elif "Terminada" in sim_sign_ui:
-            participacion_val = 95.0
-            
-    actividades_val = 90.0 if sim_presence == "Presente" else 0.0
-    
-    aei_res = calcular_aei(asistencia_val, atencion_val, participacion_val, actividades_val)
-    
-    sim_counts = {
-        "person": 1 if sim_presence == "Presente" else 0,
-        "cell phone": 1 if (sim_presence == "Presente" and sim_distraction == "Distraído (Celular en mano)") else 0,
-        "laptop": 1 if sim_presence == "Presente" else 0,
-        "hand_raised": 0,
-        "drowsy": 1 if (sim_presence == "Presente" and sim_distraction == "Fatigado (Somnoliento)") else 0,
-        "sign_language": 1 if (sim_presence == "Presente" and sim_sign_ui != "Ninguno") else 0
-    }
-    
-    if sim_sign_ui == "Ninguno":
-        sim_transcript = ""
-    elif "Participación" in sim_sign_ui:
-        sim_transcript = "Tengo una pregunta / Solicito participar"
-    elif "Soporte" in sim_sign_ui:
-        sim_transcript = "Necesito ayuda con el codigo / Soporte"
-    else:
-        sim_transcript = "Termine el ejercicio / Avance completado"
-        
-    st.session_state.live_estudiante = {
-        "nombre": "Carlos López",
-        "asistencia": asistencia_val,
-        "atencion": atencion_val,
-        "participacion": participacion_val,
-        "actividades": actividades_val,
-    }
-    st.session_state.live_aei = aei_res
-    st.session_state.live_counts = sim_counts
-    st.session_state.live_transcript = sim_transcript
-    st.session_state.live_is_live = True
-    st.session_state.live_frame_path = str(LIVE_STATE_PATH.parent / "live_frame.jpg")
-    
-    # Escritura del live_state.json para sincronizar otros módulos en modo manual
-    state_mock = {
-        "student_id": "carlos_lopez",
-        "nombre": "Carlos López",
-        "timestamp": str(time.strftime("%Y-%m-%dT%H:%M:%S-05:00")),
-        "frame_path": st.session_state.live_frame_path or "",
-        "detections": [
-            {"label": "person", "confidence": 0.99, "bbox": [0.1, 0.1, 0.5, 0.8]}
-        ] if sim_presence == "Presente" else [],
-        "counts": sim_counts,
-        "metrics": {
-            "asistencia": asistencia_val,
-            "atencion": atencion_val,
-            "participacion": participacion_val,
-            "actividades": actividades_val
-        },
-        "aei": aei_res,
-        "transcript": sim_transcript
-    }
-    
-    if sim_counts["cell phone"] > 0:
-        state_mock["detections"].append({"label": "cell phone", "confidence": 0.92, "bbox": [0.6, 0.3, 0.15, 0.2]})
-    if sim_counts["drowsy"] > 0:
-        state_mock["detections"].append({"label": "drowsy", "confidence": 0.88, "bbox": [0.2, 0.2, 0.3, 0.4]})
-    if sim_counts["sign_language"] > 0:
-        state_mock["detections"].append({"label": "sign_language", "confidence": 0.95, "bbox": [0.4, 0.4, 0.2, 0.3]})
-        
-    try:
-        temp_state_path = LIVE_STATE_PATH.with_suffix(".json.tmp")
-        with open(temp_state_path, "w") as f:
-            json.dump(state_mock, f, indent=2)
-        os.replace(temp_state_path, LIVE_STATE_PATH)
-    except Exception:
-        pass
-
 def cargar_estado_en_vivo():
-    if modo_manual:
-        return (
-            st.session_state.live_estudiante,
-            st.session_state.live_aei,
-            st.session_state.live_frame_path,
-            st.session_state.get("live_detections", []),
-            st.session_state.live_counts,
-            True,
-            st.session_state.live_transcript
-        )
+    # Simulación manual eliminada. Todo se basa en el feed de visión real en vivo.
     
     # Modo normal (leer archivo)
     estudiante = estudiante_default
@@ -499,16 +369,13 @@ st.title("🌈 Campus Guardian Access AI")
 st.markdown("<p style='color: #94a3b8; font-size: 1.1rem; margin-top: -10px;'>Plataforma Inteligente de Inclusión y Alerta Temprana Académica</p>", unsafe_allow_html=True)
 
 # Barra de estado dinámica (Fragmento)
-@st.fragment(run_every=1.0)
+@st.fragment(run_every=2.0)
 def render_status_bar():
     _, _, _, _, _, is_live_dynamic, _ = cargar_estado_en_vivo()
     if is_live_dynamic:
-        if modo_manual:
-            st.success("🟢 Modo de Simulación Manual (Demo) Activo: Controlado desde la Barra Lateral")
-        else:
-            st.success("🟢 Conexión en vivo activa: Recibiendo datos de la webcam")
+        st.success("🟢 Conexión en vivo activa: Recibiendo datos de la webcam")
     else:
-        st.warning("⚠️ Modo offline: Iniciando con datos estáticos (Corre vision/detection_yolo.py o activa Forzar Modo Manual)")
+        st.warning("⚠️ Modo offline: Iniciando con datos estáticos (Corre run.py para activar la cámara en vivo)")
 
 render_status_bar()
 
@@ -568,7 +435,7 @@ with tab_inclusiva:
                 st.rerun()
 
         # Display y Historial dinámico (Fragmento)
-        @st.fragment(run_every=1.0)
+        @st.fragment(run_every=0.2)
         def render_subtitles_display():
             if st.session_state.profesor_subtitles:
                 st.markdown(
@@ -602,7 +469,7 @@ with tab_inclusiva:
         st.markdown("##### 2. Estudiante Mudo ➔ Profesor (Lenguaje de Señas con Visión)")
         
         # Alertas de señas dinámicas (Fragmento)
-        @st.fragment(run_every=1.0)
+        @st.fragment(run_every=0.1)
         def render_alertas_señas():
             _, _, _, _, _, _, trans = cargar_estado_en_vivo()
             if trans:
@@ -641,7 +508,7 @@ with tab_inclusiva:
                 st.markdown(
                     """
                     <div style="background-color: #0b0f19; border: 1px solid #1e293b; padding: 20px; border-radius: 10px; text-align: center; color: #64748b;">
-                        <span>Esperando traducción de señas... (Presiona la tecla <strong>'S'</strong> en la cámara o usa la simulación manual en la barra lateral)</span>
+                        <span>Esperando traducción de señas... (Presiona la tecla <strong>'S'</strong> en la ventana de la cámara)</span>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -653,7 +520,7 @@ with tab_inclusiva:
         st.markdown("### 🎥 Feed de Cámara Web (Visión)")
         
         # Cámara en vivo dinámica (Fragmento)
-        @st.fragment(run_every=1.0)
+        @st.fragment(run_every=0.1)
         def render_feed_camara():
             _, _, frame_path_cam, _, counts_cam, is_live_cam, _ = cargar_estado_en_vivo()
             if is_live_cam and frame_path_cam and os.path.exists(frame_path_cam):
@@ -689,7 +556,7 @@ with tab_inclusiva:
 # ----------------- PESTAÑA ANALÍTICA DE ENGAGEMENT -----------------
 with tab_engagement:
     # Pestaña de engagement dinámica (Fragmento)
-    @st.fragment(run_every=1.0)
+    @st.fragment(run_every=0.1)
     def render_tab_engagement():
         estudiante_eng, aei_eng, frame_path_eng, _, counts_eng, is_live_eng, _ = cargar_estado_en_vivo()
         

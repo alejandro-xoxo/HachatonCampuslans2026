@@ -67,6 +67,11 @@ SIGN_TEXTS = {
     3: "Termine el ejercicio / Avance completado"
 }
 
+# Variables para optimizar rendimiento: Ejecutar inferencia YOLO cada N frames
+YOLO_INTERVAL = 4
+cached_detections = []
+cached_counts = {label: 0 for label in TARGETS}
+
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
@@ -76,28 +81,42 @@ while cap.isOpened():
     frame = cv2.resize(frame, (640, 480))
     h, w = frame.shape[:2]
 
-    # Inferencia optimizada a imgsz=320 con umbral de confianza a 0.30 para evitar falsos positivos
-    results = model(frame, imgsz=320, conf=0.30, verbose=False)[0]
-    counts = {label: 0 for label in TARGETS}
-    detections = []
+    # Ejecutar YOLOv8 solo cada YOLO_INTERVAL frames para ahorrar CPU drásticamente y mejorar la fluidez
+    if frame_counter % YOLO_INTERVAL == 0 or not cached_detections:
+        results = model(frame, imgsz=320, conf=0.30, verbose=False)[0]
+        counts = {label: 0 for label in TARGETS}
+        detections = []
 
-    for box in results.boxes:
-        label = model.names[int(box.cls)]
-        if label not in TARGETS:
-            continue
-        x1, y1, x2, y2 = map(int, box.xyxy[0])
-        conf = float(box.conf[0])
-        counts[label] += 1
-        
-        # Bounding box normalizado [x, y, w, h] tal como requiere schema.json
-        bbox = [x1 / w, y1 / h, (x2 - x1) / w, (y2 - y1) / h]
-        
-        detections.append({
-            "label": label,
-            "confidence": round(conf, 4),
-            "bbox": bbox,
-        })
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (124, 58, 237), 2) # Color morado #7c3aed (BGR: 237, 58, 124)
+        for box in results.boxes:
+            label = model.names[int(box.cls)]
+            if label not in TARGETS:
+                continue
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            conf = float(box.conf[0])
+            counts[label] += 1
+            
+            # Bounding box normalizado [x, y, w, h] tal como requiere schema.json
+            bbox = [x1 / w, y1 / h, (x2 - x1) / w, (y2 - y1) / h]
+            
+            detections.append({
+                "label": label,
+                "confidence": round(conf, 4),
+                "bbox": bbox,
+            })
+        cached_detections = detections
+        cached_counts = counts
+    else:
+        detections = cached_detections
+        counts = cached_counts
+
+    # Dibujar las detecciones (reales o cacheadas) en el frame actual
+    for d in detections:
+        bbox = d["bbox"]
+        label = d["label"]
+        conf = d["confidence"]
+        x1, y1 = int(bbox[0] * w), int(bbox[1] * h)
+        x2, y2 = int((bbox[0] + bbox[2]) * w), int((bbox[1] + bbox[3]) * h)
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (124, 58, 237), 2) # Color morado #7c3aed
         cv2.putText(frame, f"{label} {conf:.2f}", (x1, y1 - 8),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.55, (124, 58, 237), 2)
 
@@ -245,8 +264,8 @@ while cap.isOpened():
 
     cv2.imshow("Campus Guardian - Deteccion", frame)
 
-    # Introducir delay para 5 FPS
-    time.sleep(0.2)
+    # Pequeño delay de cortesía de 10ms para evitar busy-waiting extremo, permitiendo FPS máximos
+    time.sleep(0.01)
 
     # Captura de teclado local
     key = cv2.waitKey(1) & 0xFF
