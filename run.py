@@ -28,16 +28,41 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
+def find_python_executable():
+    # 1. Verificar si hay un venv activo en las variables de entorno
+    virtual_env = os.environ.get("VIRTUAL_ENV")
+    if virtual_env:
+        venv_python = os.path.join(virtual_env, "bin", "python")
+        if os.path.exists(venv_python):
+            return venv_python
+            
+    # 2. Buscar en el directorio padre (../.venv/)
+    parent_venv = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".venv"))
+    parent_python = os.path.join(parent_venv, "bin", "python")
+    if os.path.exists(parent_python):
+        return parent_python
+        
+    # 3. Buscar en el directorio raíz (.venv/)
+    local_venv = os.path.abspath(os.path.join(os.path.dirname(__file__), ".venv"))
+    local_python = os.path.join(local_venv, "bin", "python")
+    if os.path.exists(local_python):
+        return local_python
+        
+    # 4. Fallback al ejecutable actual
+    return sys.executable
+
 def main():
+    python_exe = find_python_executable()
+    
     print("=" * 70)
     print("🌈 Iniciando Ecosistema de Campus Guardian Access AI")
     print("=" * 70)
-    print(f"Utilizando el entorno Python: {sys.executable}\n")
+    print(f"Utilizando el entorno Python: {python_exe}\n")
 
     # 1. Iniciar Servidor del Dashboard (Streamlit)
     print("📊 Iniciando Servidor Dashboard (Streamlit)...")
     cmd_streamlit = [
-        sys.executable, "-m", "streamlit", "run",
+        python_exe, "-m", "streamlit", "run",
         "dashboard/app_streamlit.py", "--server.port", "8501"
     ]
     p_streamlit = subprocess.Popen(
@@ -53,7 +78,7 @@ def main():
 
     # 2. Iniciar Bucle de Visión Artificial (YOLOv8 + MediaPipe)
     print("\n🎥 Iniciando Bucle de Visión Artificial (Webcam)...")
-    cmd_vision = [sys.executable, "vision/detection_yolo.py"]
+    cmd_vision = [python_exe, "vision/detection_yolo.py"]
     p_vision = subprocess.Popen(
         cmd_vision,
         stdout=None,  # Imprimir logs y logs de inferencia en consola
