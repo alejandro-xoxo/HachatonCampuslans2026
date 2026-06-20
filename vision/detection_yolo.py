@@ -23,14 +23,28 @@ torch.set_num_threads(2)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from analytics.aei_engine import calcular_aei
 
-# Inicializar MediaPipe Face Mesh para detección de somnolencia real
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(
-    max_num_faces=1,
-    refine_landmarks=True,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
-)
+# Intentar inicializar MediaPipe Face Mesh para detección de somnolencia
+USE_MEDIAPIPE = False
+try:
+    if hasattr(mp, "solutions") and hasattr(mp.solutions, "face_mesh"):
+        mp_face_mesh = mp.solutions.face_mesh
+        face_mesh = mp_face_mesh.FaceMesh(
+            max_num_faces=1,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        )
+        USE_MEDIAPIPE = True
+except Exception:
+    pass
+
+# Si MediaPipe no está completamente disponible en este entorno, usar los cascadas de OpenCV como fallback
+if not USE_MEDIAPIPE:
+    try:
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+    except Exception:
+        pass
 
 TARGETS = {"person", "cell phone", "laptop"}
 FRAMES_DIR = Path(__file__).parent.parent / "data" / "frames"
@@ -120,45 +134,79 @@ while cap.isOpened():
         cv2.putText(frame, f"{label} {conf:.2f}", (x1, y1 - 8),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.55, (124, 58, 237), 2)
 
-    # --- Detección real de somnolencia con MediaPipe Face Mesh ---
+    # --- Detección real de somnolencia (MediaPipe con Fallback a OpenCV Haar Cascades) ---
     drowsy_real = False
     ear_val = 0.0
-    try:
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        fm_results = face_mesh.process(rgb_frame)
-        if fm_results.multi_face_landmarks:
-            landmarks = fm_results.multi_face_landmarks[0].landmark
-            
-            # Ojo izquierdo: superior=159, inferior=145, lateral_izq=33, lateral_der=133
-            p159, p145, p33, p133 = landmarks[159], landmarks[145], landmarks[33], landmarks[133]
-            dist_left_y = ((p159.x - p145.x)**2 + (p159.y - p145.y)**2)**0.5
-            dist_left_x = ((p33.x - p133.x)**2 + (p33.y - p133.y)**2)**0.5
-            ear_left = dist_left_y / (dist_left_x if dist_left_x > 0 else 1.0)
-            
-            # Ojo derecho: superior=386, inferior=374, lateral_izq=362, lateral_der=263
-            p386, p374, p362, p263 = landmarks[386], landmarks[374], landmarks[362], landmarks[263]
-            dist_right_y = ((p386.x - p374.x)**2 + (p386.y - p374.y)**2)**0.5
-            dist_right_x = ((p362.x - p263.x)**2 + (p362.y - p263.y)**2)**0.5
-            ear_right = dist_right_y / (dist_right_x if dist_right_x > 0 else 1.0)
-            
-            ear_val = (ear_left + ear_right) / 2.0
-            
-            # Dibujar landmarks en los ojos (puntos rosa)
-            for idx in [159, 145, 33, 133, 386, 374, 362, 263]:
-                pt = landmarks[idx]
-                cv2.circle(frame, (int(pt.x * w), int(pt.y * h)), 2, (255, 0, 255), -1)
+    
+    if USE_MEDIAPIPE:
+        try:
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            fm_results = face_mesh.process(rgb_frame)
+            if fm_results.multi_face_landmarks:
+                landmarks = fm_results.multi_face_landmarks[0].landmark
                 
-            if ear_val < 0.15:
-                drowsy_frames += 1
+                # Ojo izquierdo: superior=159, inferior=145, lateral_izq=33, lateral_der=133
+                p159, p145, p33, p133 = landmarks[159], landmarks[145], landmarks[33], landmarks[133]
+                dist_left_y = ((p159.x - p145.x)**2 + (p159.y - p145.y)**2)**0.5
+                dist_left_x = ((p33.x - p133.x)**2 + (p33.y - p133.y)**2)**0.5
+                ear_left = dist_left_y / (dist_left_x if dist_left_x > 0 else 1.0)
+                
+                # Ojo derecho: superior=386, inferior=374, lateral_izq=362, lateral_der=263
+                p386, p374, p362, p263 = landmarks[386], landmarks[374], landmarks[362], landmarks[263]
+                dist_right_y = ((p386.x - p374.x)**2 + (p386.y - p374.y)**2)**0.5
+                dist_right_x = ((p362.x - p263.x)**2 + (p362.y - p263.y)**2)**0.5
+                ear_right = dist_right_y / (dist_right_x if dist_right_x > 0 else 1.0)
+                
+                ear_val = (ear_left + ear_right) / 2.0
+                
+                # Dibujar landmarks en los ojos (puntos rosa)
+                for idx in [159, 145, 33, 133, 386, 374, 362, 263]:
+                    pt = landmarks[idx]
+                    cv2.circle(frame, (int(pt.x * w), int(pt.y * h)), 2, (255, 0, 255), -1)
+                    
+                if ear_val < 0.15:
+                    drowsy_frames += 1
+                else:
+                    drowsy_frames = max(0, drowsy_frames - 1)
+                    
+                if drowsy_frames >= 5:
+                    drowsy_real = True
             else:
                 drowsy_frames = max(0, drowsy_frames - 1)
+        except Exception:
+            pass
+    else:
+        # Fallback usando OpenCV Haar Cascades
+        try:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.25, 4)
+            
+            if len(faces) == 0:
+                drowsy_frames = max(0, drowsy_frames - 1)
                 
-            if drowsy_frames >= 5:
-                drowsy_real = True
-        else:
-            drowsy_frames = max(0, drowsy_frames - 1)
-    except Exception:
-        pass
+            for (fx, fy, fw, fh) in faces:
+                # Dibujar un marco fino de cara detectada en color magenta/rosa
+                cv2.rectangle(frame, (fx, fy), (fx+fw, fy+fh), (255, 0, 255), 1)
+                
+                roi_gray = gray[fy:fy+fh, fx:fx+fw]
+                roi_color = frame[fy:fy+fh, fx:fx+fw]
+                
+                # Detectar ojos dentro del área del rostro
+                eyes = eye_cascade.detectMultiScale(roi_gray, 1.15, 3)
+                for (ex, ey, ew, eh) in eyes:
+                    # Dibujar círculos en los ojos detectados
+                    cv2.circle(roi_color, (ex + ew//2, ey + eh//2), min(ew, eh)//2, (0, 255, 255), 1)
+                
+                # Si detectamos rostro pero no detectamos ambos ojos, asumimos que están cerrados/somnolencia
+                if len(eyes) < 2:
+                    drowsy_frames += 1
+                else:
+                    drowsy_frames = max(0, drowsy_frames - 1)
+                    
+                if drowsy_frames >= 5:
+                    drowsy_real = True
+        except Exception:
+            pass
 
     # --- Calcular métricas en tiempo real aplicando modificadores de simulación ---
     person_count = 0 if sim_absent else counts.get("person", 0)
