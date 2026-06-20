@@ -76,80 +76,103 @@ Para asegurar tasas de refresco fluidas de **5+ FPS** sin congelar el computador
 
 ## 🛠️ Requisitos e Instalación
 
-### Requisitos Previos
+### 📋 Requisitos Previos
+
 * **Python**: Versión 3.10 o superior (Recomendado: 3.14.x).
-* **Webcam**: Cualquier cámara web interna o USB estándar conectada al sistema.
-* **Dependencias del Sistema (Esencial para Linux/Ubuntu)**:
-  Dado que el proyecto utiliza OpenCV para visión computacional, asegúrate de tener las librerías gráficas del sistema instaladas. En sistemas Debian/Ubuntu, ejecuta:
-  ```bash
-  sudo apt update
-  sudo apt install -y libgl1-mesa-glx libglib2.0-0 ffmpeg
-  ```
+* **Webcam**: Cualquier cámara web interna o USB estándar.
 
-### Instalación Paso a Paso
+### 💻 Instalación por Sistema Operativo
 
-1. **Clonar el Repositorio**:
+#### ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black) Linux (Ubuntu/Debian)
+
+1. **Instalar dependencias gráficas del sistema** (necesarias para OpenCV):
+   ```bash
+   sudo apt update
+   sudo apt install -y libgl1-mesa-glx libglib2.0-0 ffmpeg
+   ```
+2. **Clonar el repositorio**:
    ```bash
    git clone https://github.com/alejandro-xoxo/HachatonCampuslans2026.git
    cd HachatonCampuslans2026
    ```
-
-2. **Preparar el Entorno Virtual**:
-   * **Opción A: Usar el entorno virtual existente** (si ya lo tienes configurado en el directorio padre):
-     ```bash
-     source ../.venv/bin/activate
-     ```
-   * **Opción B: Crear un nuevo entorno virtual desde cero**:
-     ```bash
-     python -m venv .venv
-     source .venv/bin/activate  # En Windows usa: .venv\Scripts\activate
-     ```
-
-3. **Instalar Dependencias de Python**:
-   Una vez activado tu entorno virtual (Opción A o B), instala los paquetes requeridos:
+3. **Crear y activar el entorno virtual**:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+4. **Instalar dependencias de Python**:
    ```bash
    pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
-4. **Configurar Variables de Entorno (Opcional para Gemini)**:
+#### ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white) macOS
+
+1. **Clonar el repositorio**:
+   ```bash
+   git clone https://github.com/alejandro-xoxo/HachatonCampuslans2026.git
+   cd HachatonCampuslans2026
+   ```
+2. **Crear y activar el entorno virtual**:
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+3. **Instalar dependencias de Python**:
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+
+#### ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white) Windows
+
+1. **Clonar el repositorio**:
+   ```cmd
+   git clone https://github.com/alejandro-xoxo/HachatonCampuslans2026.git
+   cd HachatonCampuslans2026
+   ```
+2. **Crear y activar el entorno virtual**:
+   * En **CMD**:
+     ```cmd
+     python -m venv .venv
+     .venv\Scripts\activate
+     ```
+   * En **PowerShell**:
+     ```powershell
+     python -m venv .venv
+     .venv\Scripts\Activate.ps1
+     ```
+3. **Instalar dependencias de Python**:
+   ```cmd
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+
+---
+
+## 🚀 Guía de Ejecución Rápida (Un solo Comando)
+
+Para mayor fluidez y comodidad durante la presentación de la demo, hemos integrado un script de encendido unificado que inicia tanto el Servidor de Streamlit como el bucle de Visión Artificial YOLO simultáneamente:
+
+1. **Configurar API Key de Gemini (Opcional)**:
    Crea un archivo `.env` en la raíz del repositorio y añade tu API key de Google Gemini:
    ```env
    GEMINI_API_KEY=tu_api_key_aqui
    ```
-   *Nota: Si no configuras la API key, la plataforma se ejecutará perfectamente en modo offline usando un motor de reglas determinista local para no detener la demo.*
+   *Nota: Si no configuras la API key, la plataforma se ejecutará perfectamente en modo offline usando un motor de reglas local para no detener la demo.*
 
+2. **Ejecutar el comando de inicio unificado**:
+   Estando en el directorio del proyecto con tu entorno virtual activo, simplemente ejecuta:
+   ```bash
+   python run.py
+   ```
+   *El script `run.py` detectará automáticamente tu entorno virtual y arrancará los dos procesos en paralelo.*
 
----
+3. **Acceder a la interfaz**:
+   Abre tu navegador en: [http://localhost:8501](http://localhost:8501)
 
-## 🚀 Guía de Ejecución
-
-Para iniciar todo el ecosistema de Campus Guardian, abre varias consolas y ejecuta los comandos según tu sistema operativo:
-
-### 1. Terminal 1: Servidor del Dashboard (Streamlit)
-* **Linux / macOS**:
-  ```bash
-  source .venv/bin/activate  # O: source ../.venv/bin/activate
-  streamlit run dashboard/app_streamlit.py --server.port 8501
-  ```
-* **Windows (CMD / PowerShell)**:
-  ```cmd
-  .venv\Scripts\activate
-  streamlit run dashboard/app_streamlit.py --server.port 8501
-  ```
-  *(Accede en tu navegador a: [http://localhost:8501](http://localhost:8501))*
-
-### 2. Terminal 2: Bucle de Visión Artificial (YOLOv8 & MediaPipe)
-* **Linux / macOS**:
-  ```bash
-  source .venv/bin/activate  # O: source ../.venv/bin/activate
-  python vision/detection_yolo.py
-  ```
-* **Windows (CMD / PowerShell)**:
-  ```cmd
-  .venv\Scripts\activate
-  python vision/detection_yolo.py
-  ```
+4. **Detener el sistema**:
+   Presiona `Ctrl+C` en la terminal para apagar todos los servicios de forma limpia y liberar los puertos.
 
 ## 💾 Integración y Uso de FiftyOne
 
