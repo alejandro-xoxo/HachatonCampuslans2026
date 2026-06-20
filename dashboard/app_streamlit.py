@@ -30,30 +30,123 @@ header {visibility: hidden;}
 html, body, [class*="css"] {
     font-family: 'Outfit', sans-serif;
 }
+
+/* Deep space gradient background */
 .stApp {
-    background-color: #070a13;
-    color: #e2e8f0;
+    background: radial-gradient(circle at 50% 50%, #0d0926 0%, #050310 100%) !important;
+    color: #f1f5f9 !important;
+    animation: fadeIn 1.0s ease-out;
 }
+
+/* Sidebar styling - Purple tint */
 [data-testid="stSidebar"] {
-    background-color: #0b0f19 !important;
-    border-right: 1px solid #1e293b;
+    background-color: #080518 !important;
+    border-right: 1px solid rgba(139, 92, 246, 0.25) !important;
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.5) !important;
 }
+
+/* Glowing card effect for Metrics */
 div[data-testid="stMetric"] {
-    background-color: #0b0f19 !important;
-    border: 1px solid #1e293b !important;
+    background: linear-gradient(135deg, #0d0b26 0%, #120e36 100%) !important;
+    border: 1px solid rgba(139, 92, 246, 0.25) !important;
     padding: 18px !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.05), inset 0 0 8px rgba(59, 130, 246, 0.05) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    animation: slideUp 0.6s ease-out;
 }
+
+div[data-testid="stMetric"]:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: rgba(6, 182, 212, 0.5) !important;
+    box-shadow: 0 12px 24px rgba(139, 92, 246, 0.15), inset 0 0 12px rgba(6, 182, 212, 0.15) !important;
+}
+
 div[data-testid="stMetric"] label {
-    color: #94a3b8 !important;
+    color: #c084fc !important; /* Soft Purple */
     font-size: 0.95rem !important;
     font-weight: 600 !important;
+    letter-spacing: 0.5px;
 }
+
 div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+    color: #06b6d4 !important; /* Cyber Cyan */
+    font-size: 2.0rem !important;
+    font-weight: 800 !important;
+    text-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+
+/* Custom buttons style (Purple to Blue gradient) */
+div.stButton > button {
+    background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%) !important;
     color: #ffffff !important;
-    font-size: 1.8rem !important;
+    border: none !important;
+    padding: 10px 24px !important;
+    border-radius: 12px !important;
     font-weight: 700 !important;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    letter-spacing: 0.5px;
+}
+
+div.stButton > button:hover {
+    background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%) !important;
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5) !important;
+    transform: translateY(-2px);
+}
+
+div.stButton > button:active {
+    transform: translateY(1px);
+}
+
+/* Interactive elements and text gradients */
+h1 {
+    background: linear-gradient(135deg, #c084fc 0%, #60a5fa 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    font-weight: 800 !important;
+}
+
+h2, h3 {
+    color: #e2e8f0 !important;
+    font-weight: 700 !important;
+}
+
+/* Tabs customization */
+button[data-baseweb="tab"] {
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    color: #94a3b8 !important;
+    background-color: transparent !important;
+    border-bottom: 2px solid transparent !important;
+    transition: all 0.3s ease !important;
+}
+
+button[data-baseweb="tab"]:hover {
+    color: #c084fc !important;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #a855f7 !important;
+    border-bottom-color: #a855f7 !important;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -222,10 +315,10 @@ asegurar_placeholder_frame()
 
 estudiante_default = {
     "nombre": "Carlos López",
-    "asistencia": 75.0,
-    "atencion": 60.0,
-    "participacion": 55.0,
-    "actividades": 80.0,
+    "asistencia": 0.0,
+    "atencion": 0.0,
+    "participacion": 0.0,
+    "actividades": 0.0,
 }
 aei_default = calcular_aei(
     estudiante_default["asistencia"],
@@ -396,10 +489,9 @@ estudiante, aei, frame_path, detections, counts, is_live, transcript = cargar_es
 
 # Historial para gráficos
 if "history" not in st.session_state or not st.session_state.history:
-    # Curva suave y realista de engagement inicial para que empiece viéndose excelente
+    # Inicializamos con un punto en cero para que empiece limpio
     st.session_state.history = [
-        {"Segundo": i, "Atención": 85.0 + (i % 3) * 4, "Participación": 65.0 + (i % 2) * 8, "AEI": 75.0 + (i % 4) * 3}
-        for i in range(1, 15)
+        {"Segundo": 0, "Atención": 0.0, "Participación": 0.0, "AEI": 0.0}
     ]
 
 # --- UI Principal ---
@@ -572,20 +664,20 @@ with tab_inclusiva:
                 o1, o2 = st.columns(2)
                 with o1:
                     if counts_cam.get("sign_language", 0) > 0:
-                        st.markdown("<div style='background-color: #6366f120; border: 1px solid #6366f1; padding: 10px; border-radius: 8px; color: #818cf8; font-weight: 700; text-align: center;'>🤟 Lenguaje de Señas: ACTIVO</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='background-color: rgba(168, 85, 247, 0.15); border: 1px solid #a855f7; padding: 10px; border-radius: 8px; color: #c084fc; font-weight: 700; text-align: center; box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);'>🤟 Lenguaje de Señas: ACTIVO</div>", unsafe_allow_html=True)
                     else:
-                        st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #64748b; font-weight: 600; text-align: center;'>🤟 Lenguaje de Señas: Esperando</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='background-color: #0d0b21; border: 1px solid rgba(139, 92, 246, 0.2); padding: 10px; border-radius: 8px; color: #64748b; font-weight: 600; text-align: center;'>🤟 Lenguaje de Señas: Esperando</div>", unsafe_allow_html=True)
                 with o2:
                     if counts_cam.get("person", 0) > 0:
-                        st.markdown("<div style='background-color: #10b98120; border: 1px solid #10b981; padding: 10px; border-radius: 8px; color: #10b981; font-weight: 700; text-align: center;'>👤 Presencia: REGISTRADA</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='background-color: rgba(6, 182, 212, 0.15); border: 1px solid #06b6d4; padding: 10px; border-radius: 8px; color: #22d3ee; font-weight: 700; text-align: center; box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);'>👤 Presencia: REGISTRADA</div>", unsafe_allow_html=True)
                     else:
-                        st.markdown("<div style='background-color: #ef444420; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700; text-align: center;'>👤 Presencia: AUSENTE</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700; text-align: center; box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);'>👤 Presencia: AUSENTE</div>", unsafe_allow_html=True)
             else:
                 st.markdown(
                     """
-                    <div style="background-color:#0b0f19; border: 1px dashed #1e293b;
+                    <div style="background-color:#0d0b21; border: 1px dashed rgba(139, 92, 246, 0.3);
                                 height: 280px; border-radius: 12px; display: flex;
-                                justify-content: center; align-items: center; color: #64748b;">
+                                justify-content: center; align-items: center; color: #94a3b8; margin-bottom: 15px;">
                         <span>Inicia vision/detection_yolo.py para conectar la cámara</span>
                     </div>
                     """,
@@ -599,7 +691,7 @@ with tab_engagement:
     # Pestaña de engagement dinámica (Fragmento)
     @st.fragment(run_every=1.0)
     def render_tab_engagement():
-        estudiante_eng, aei_eng, _, _, counts_eng, is_live_eng, _ = cargar_estado_en_vivo()
+        estudiante_eng, aei_eng, frame_path_eng, _, counts_eng, is_live_eng, _ = cargar_estado_en_vivo()
         
         # Historial para gráficos
         if is_live_eng:
@@ -613,7 +705,7 @@ with tab_engagement:
             if len(st.session_state.history) > 30:
                 st.session_state.history.pop(0)
                 
-        COLORES = {"verde": "#10b981", "amarillo": "#f59e0b", "rojo": "#ef4444"}
+        COLORES = {"verde": "#06b6d4", "amarillo": "#a855f7", "rojo": "#ef4444"}
         color_eng = COLORES.get(aei_eng["estado"], "#4b5563")
 
         col_eng_left, col_eng_right = st.columns([1.8, 1.2])
@@ -621,13 +713,13 @@ with tab_engagement:
         with col_eng_left:
             st.markdown(f"##### Estudiante: <span style='color: #ffffff; font-weight: 700;'>{estudiante_eng['nombre']}</span>", unsafe_allow_html=True)
             
-            # AEI Score Card
+            # AEI Score Card with Gradient and glowing styling
             st.markdown(
                 f"""
-                <div style="background-color: #0b0f19; border: 2px solid {color_eng}; border-radius: 12px; padding: 24px; text-align: center; box-shadow: 0 0 20px {color_eng}15; margin-bottom: 24px;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 3.8rem; font-weight: 800;">{aei_eng['score']}</h1>
-                    <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 0.95rem; font-weight: 600; letter-spacing: 1px;">ACADEMIC ENGAGEMENT INDEX (AEI)</p>
-                    <span style="color: {color_eng}; font-size: 0.9rem; font-weight: 700; border: 1px solid {color_eng}; padding: 3px 12px; border-radius: 20px; display: inline-block; margin-top: 10px;">
+                <div style="background: linear-gradient(135deg, #0d0b21 0%, #120e36 100%); border: 2px solid {color_eng}; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 0 20px {color_eng}20; margin-bottom: 24px;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 3.8rem; font-weight: 800; text-shadow: 0 0 15px {color_eng}40;">{aei_eng['score']}</h1>
+                    <p style="color: #c084fc; margin: 5px 0 0 0; font-size: 0.95rem; font-weight: 600; letter-spacing: 1px;">ACADEMIC ENGAGEMENT INDEX (AEI)</p>
+                    <span style="color: {color_eng}; font-size: 0.9rem; font-weight: 700; border: 1px solid {color_eng}; padding: 3px 12px; border-radius: 20px; display: inline-block; margin-top: 10px; box-shadow: 0 0 8px {color_eng}30;">
                         ESTADO: {aei_eng['estado'].upper()}
                     </span>
                 </div>
@@ -655,6 +747,21 @@ with tab_engagement:
         with col_eng_right:
             st.markdown("##### 📱 Distracciones y Somnolencia (YOLO + MediaPipe)")
             
+            # Streaming en vivo de la webcam visible en la pestaña de engagement
+            if is_live_eng and frame_path_eng and os.path.exists(frame_path_eng):
+                st.image(frame_path_eng, use_container_width=True)
+            else:
+                st.markdown(
+                    """
+                    <div style="background-color:#0d0b21; border: 1px dashed rgba(139, 92, 246, 0.3);
+                                height: 200px; border-radius: 12px; display: flex;
+                                justify-content: center; align-items: center; color: #94a3b8; margin-bottom: 15px;">
+                        <span>Inicia vision/detection_yolo.py para conectar la cámara</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            
             # Tarjetas de alertas de distracción
             if is_live_eng:
                 cell_active = counts_eng.get("cell phone", 0) > 0
@@ -663,21 +770,21 @@ with tab_engagement:
                 d1, d2 = st.columns(2)
                 with d1:
                     if cell_active:
-                        st.markdown("<div style='background-color: #ef444420; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700; text-align: center;'>📱 Celular: DETECTADO</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700; text-align: center; box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);'>📱 Celular: DETECTADO</div>", unsafe_allow_html=True)
                     else:
-                        st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #94a3b8; font-weight: 600; text-align: center;'>📱 Celular: Ninguno</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='background-color: #0d0b21; border: 1px solid rgba(139, 92, 246, 0.2); padding: 10px; border-radius: 8px; color: #94a3b8; font-weight: 600; text-align: center;'>📱 Celular: Ninguno</div>", unsafe_allow_html=True)
                 with d2:
                     if drowsy_active:
-                        st.markdown("<div style='background-color: #ef444420; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700; text-align: center;'>😴 Somnoliento: ALERTA</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 10px; border-radius: 8px; color: #ef4444; font-weight: 700; text-align: center; box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);'>😴 Somnoliento: ALERTA</div>", unsafe_allow_html=True)
                     else:
-                        st.markdown("<div style='background-color: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; color: #94a3b8; font-weight: 600; text-align: center;'>😴 Somnoliento: Normal</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='background-color: #0d0b21; border: 1px solid rgba(139, 92, 246, 0.2); padding: 10px; border-radius: 8px; color: #94a3b8; font-weight: 600; text-align: center;'>😴 Somnoliento: Normal</div>", unsafe_allow_html=True)
                         
                 if cell_active:
                     st.markdown("<p style='color: #ef4444; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>📱 Estudiante distraído con el teléfono celular.</p>", unsafe_allow_html=True)
                 elif drowsy_active:
                     st.markdown("<p style='color: #ef4444; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>😴 Fatiga severa registrada (Ojos cerrados / Somnolencia).</p>", unsafe_allow_html=True)
                 elif counts_eng.get("person", 0) > 0:
-                    st.markdown("<p style='color: #10b981; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>✨ Estudiante enfocado y libre de distracciones.</p>", unsafe_allow_html=True)
+                    st.markdown("<p style='color: #06b6d4; font-size: 0.85rem; margin-top: 10px; font-weight: 600;'>✨ Estudiante enfocado y libre de distracciones.</p>", unsafe_allow_html=True)
             else:
                 st.info("Conecta la webcam para iniciar el monitoreo de distracciones.")
                 

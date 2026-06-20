@@ -14,6 +14,7 @@ from pathlib import Path
 import cv2
 import torch
 from ultralytics import YOLO
+import mediapipe as mp
 
 # Limitar hilos en PyTorch a 2 para compatibilidad y fluidez total
 torch.set_num_threads(2)
@@ -21,6 +22,15 @@ torch.set_num_threads(2)
 # Agregar la ruta base al path para importar el motor de analítica
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from analytics.aei_engine import calcular_aei
+
+# Inicializar MediaPipe Face Mesh para detección de somnolencia real
+mp_face_mesh = mp.solutions.face_mesh
+face_mesh = mp_face_mesh.FaceMesh(
+    max_num_faces=1,
+    refine_landmarks=True,
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5
+)
 
 TARGETS = {"person", "cell phone", "laptop"}
 FRAMES_DIR = Path(__file__).parent.parent / "data" / "frames"
@@ -36,11 +46,14 @@ if not cap.isOpened():
     raise RuntimeError("No se pudo abrir la webcam (dispositivo 0)")
 
 # Historial para calcular medias móviles y simular estabilidad de métricas
-history_asistencia = []
-history_atencion = []
-history_participacion = []
+# Inicializamos con 0.0 para que el score en cada sesión comience en cero y crezca gradualmente
 MAX_HISTORY = 60  # aproximadamente los últimos 60 frames
+history_asistencia = [0.0] * MAX_HISTORY
+history_atencion = [0.0] * MAX_HISTORY
+history_participacion = [0.0] * MAX_HISTORY
+history_actividades = [0.0] * MAX_HISTORY
 frame_counter = 0
+drowsy_frames = 0  # Contador de frames con ojos cerrados para detectar somnolencia real
 
 # Variables de simulación interactiva para el Pitch / Demo del jurado
 sim_drowsy = False
@@ -61,10 +74,10 @@ while cap.isOpened():
 
     # Redimensionar el frame de captura a 640x480 para ahorrar CPU
     frame = cv2.resize(frame, (640, 480))
-
-    # Inferencia optimizada a imgsz=320 (3x a 4x más veloz en CPU de 8.ª generación)
-    results = model(frame, imgsz=320, verbose=False)[0]
     h, w = frame.shape[:2]
+
+    # Inferencia optimizada a imgsz=320 con umbral de confianza a 0.30 para evitar falsos positivos
+    results = model(frame, imgsz=320, conf=0.30, verbose=False)[0]
     counts = {label: 0 for label in TARGETS}
     detections = []
 
@@ -84,17 +97,60 @@ while cap.isOpened():
             "confidence": round(conf, 4),
             "bbox": bbox,
         })
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (124, 58, 237), 2) # Color morado #7c3aed (BGR: 237, 58, 124)
         cv2.putText(frame, f"{label} {conf:.2f}", (x1, y1 - 8),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (124, 58, 237), 2)
+
+    # --- Detección real de somnolencia con MediaPipe Face Mesh ---
+    drowsy_real = False
+    ear_val = 0.0
+    try:
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        fm_results = face_mesh.process(rgb_frame)
+        if fm_results.multi_face_landmarks:
+            landmarks = fm_results.multi_face_landmarks[0].landmark
+            
+            # Ojo izquierdo: superior=159, inferior=145, lateral_izq=33, lateral_der=133
+            p159, p145, p33, p133 = landmarks[159], landmarks[145], landmarks[33], landmarks[133]
+            dist_left_y = ((p159.x - p145.x)**2 + (p159.y - p145.y)**2)**0.5
+            dist_left_x = ((p33.x - p133.x)**2 + (p33.y - p133.y)**2)**0.5
+            ear_left = dist_left_y / (dist_left_x if dist_left_x > 0 else 1.0)
+            
+            # Ojo derecho: superior=386, inferior=374, lateral_izq=362, lateral_der=263
+            p386, p374, p362, p263 = landmarks[386], landmarks[374], landmarks[362], landmarks[263]
+            dist_right_y = ((p386.x - p374.x)**2 + (p386.y - p374.y)**2)**0.5
+            dist_right_x = ((p362.x - p263.x)**2 + (p362.y - p263.y)**2)**0.5
+            ear_right = dist_right_y / (dist_right_x if dist_right_x > 0 else 1.0)
+            
+            ear_val = (ear_left + ear_right) / 2.0
+            
+            # Dibujar landmarks en los ojos (puntos rosa)
+            for idx in [159, 145, 33, 133, 386, 374, 362, 263]:
+                pt = landmarks[idx]
+                cv2.circle(frame, (int(pt.x * w), int(pt.y * h)), 2, (255, 0, 255), -1)
+                
+            if ear_val < 0.15:
+                drowsy_frames += 1
+            else:
+                drowsy_frames = max(0, drowsy_frames - 1)
+                
+            if drowsy_frames >= 5:
+                drowsy_real = True
+        else:
+            drowsy_frames = max(0, drowsy_frames - 1)
+    except Exception:
+        pass
 
     # --- Calcular métricas en tiempo real aplicando modificadores de simulación ---
     person_count = 0 if sim_absent else counts.get("person", 0)
     asistencia_val = 100.0 if person_count > 0 else 0.0
     
-    # Atención disminuye si hay celular, si simula somnolencia o si no está presente
+    # Drowsiness activa si es real o si está forzada por teclado (solo si está presente)
+    drowsy_active = (drowsy_real or sim_drowsy) and (asistencia_val > 0.0)
+    
+    # Atención disminuye si hay celular, si simula/detecta somnolencia o si no está presente
     atencion_val = 100.0
-    if sim_drowsy or counts.get("cell phone", 0) > 0 or asistencia_val == 0.0:
+    if drowsy_active or counts.get("cell phone", 0) > 0 or asistencia_val == 0.0:
         atencion_val = 0.0
     
     # Participación base si está presente, aumenta si usa laptop
@@ -103,20 +159,26 @@ while cap.isOpened():
     else:
         participacion_val = 85.0 if counts.get("laptop", 0) > 0 else 60.0
 
+    # Actividades también es dinámica: empieza en 0.0 y sube a 90.0 si está presente
+    actividades_val = 90.0 if asistencia_val > 0.0 else 0.0
+
     history_asistencia.append(asistencia_val)
     history_atencion.append(atencion_val)
     history_participacion.append(participacion_val)
+    history_actividades.append(actividades_val)
 
     if len(history_asistencia) > MAX_HISTORY:
         history_asistencia.pop(0)
         history_atencion.pop(0)
         history_participacion.pop(0)
+        history_actividades.pop(0)
 
     avg_asistencia = sum(history_asistencia) / len(history_asistencia)
     avg_atencion = sum(history_atencion) / len(history_atencion)
     avg_participacion = sum(history_participacion) / len(history_participacion)
+    avg_actividades = sum(history_actividades) / len(history_actividades)
 
-    aei_res = calcular_aei(avg_asistencia, avg_atencion, avg_participacion, 90.0)
+    aei_res = calcular_aei(avg_asistencia, avg_atencion, avg_participacion, avg_actividades)
 
     # Guardar frame en vivo para Streamlit (sobrescribir el mismo archivo para evitar latencia de I/O)
     live_img_path = Path(__file__).parent.parent / "data" / "live_frame.jpg"
@@ -155,14 +217,14 @@ while cap.isOpened():
             "cell phone": counts.get("cell phone", 0),
             "laptop": counts.get("laptop", 0),
             "hand_raised": 0,
-            "drowsy": 1 if sim_drowsy else 0,
+            "drowsy": 1 if drowsy_active else 0,
             "sign_language": 1 if sim_sign > 0 else 0
         },
         "metrics": {
             "asistencia": round(avg_asistencia, 2),
             "atencion": round(avg_atencion, 2),
             "participacion": round(avg_participacion, 2),
-            "actividades": 90.0
+            "actividades": round(avg_actividades, 2)
         },
         "aei": aei_res,
         "transcript": SIGN_TEXTS[sim_sign] if sim_sign > 0 else ""
@@ -177,9 +239,9 @@ while cap.isOpened():
 
     # Dibujar info de simulación en la ventana de OpenCV para guiar al presentador
     cv2.putText(frame, "TECLAS DEMO:", (10, h - 80), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
-    cv2.putText(frame, f"[D] Somnolencia: {'SI' if sim_drowsy else 'NO'}", (10, h - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255) if sim_drowsy else (0, 255, 0), 1)
+    cv2.putText(frame, f"[D] Somnolencia Sim: {'SI' if sim_drowsy else 'NO'} | Real EAR: {ear_val:.2f}", (10, h - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255) if drowsy_active else (0, 255, 0), 1)
     cv2.putText(frame, f"[S] Senas: {SIGN_TEXTS[sim_sign] if sim_sign > 0 else 'NO'}", (10, h - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 0) if sim_sign > 0 else (0, 255, 0), 1)
-    cv2.putText(frame, f"[A] Ausencia: {'SI' if sim_absent else 'NO'}", (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255) if sim_absent else (0, 255, 0), 1)
+    cv2.putText(frame, f"[A] Ausencia Sim: {'SI' if sim_absent else 'NO'}", (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255) if sim_absent else (0, 255, 0), 1)
 
     cv2.imshow("Campus Guardian - Deteccion", frame)
 
