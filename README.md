@@ -227,6 +227,6 @@ Para capturar video de tu cámara web e importarlo y filtrarlo en tiempo real ha
 ## 📄 Documentación Adicional
 
 Para más detalles sobre la presentación comercial o el desarrollo técnico, consulta:
-* 🎤 **[pitch.md](file:///home/alejandro/Proyectos/HackATON/HachatonCampuslans2026/pitch.md)**: Estructura del pitch, propuesta de valor, guión paso a paso de la demo y propuesta de negocio.
-* ⚙️ **[technical_spec.md](file:///home/alejandro/Proyectos/HackATON/HachatonCampuslans2026/technical_spec.md)**: Especificación detallada de la arquitectura de datos, librerías y fragmentos de código de buenas prácticas aplicadas.
+* 🎤 **[pitch.md](pitch.md)**: Estructura del pitch, propuesta de valor, guión paso a paso de la demo y propuesta de negocio.
+* ⚙️ **[technical_spec.md](technical_spec.md)**: Especificación detallada de la arquitectura de datos, librerías y fragmentos de código de buenas prácticas aplicadas.
 
